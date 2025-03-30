@@ -1,10 +1,7 @@
 import os
 import json
 import discord
-import dotenv
 from functools import wraps
-
-dotenv.load_dotenv(override=True)
 
 def is_admin():
     """
