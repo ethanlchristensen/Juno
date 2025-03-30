@@ -2,7 +2,7 @@ import discord
 from typing import List, Optional
 from datetime import datetime
 
-from bot.services import YouTubeMetaData
+from bot.services import AudioSource, AudioMetaData
 
 
 class EmbedService:
@@ -35,13 +35,20 @@ class EmbedService:
 
     @staticmethod
     def create_added_to_queue_embed(
-        metadata: YouTubeMetaData, position: int, requested_by: Optional[str] = None
+        metadata: AudioMetaData, position: int, requested_by: Optional[str] = None
     ) -> discord.Embed:
         """Create an embed for when a track is added to the queue"""
+        if metadata.source == AudioSource.YOUTUBE:
+            color = 0xFF0000
+        elif metadata.source == AudioSource.SOUNDCLOUD:
+            color = 0xFF7700
+        else:
+            color = 0x808080
+            
         embed = discord.Embed(
             title="Added to Queue",
             description=f"[{metadata.title}]({metadata.url})",
-            color=0x9B59B6,  # Purple color
+            color=color,
         )
 
         embed.add_field(name="Channel", value=metadata.author, inline=True)
@@ -51,24 +58,36 @@ class EmbedService:
         if requested_by:
             embed.set_footer(text=f"Requested by: {requested_by}")
 
-        embed.set_thumbnail(url=metadata.thumbnail_url)
+        if metadata.thumbnail_url:
+            embed.set_thumbnail(url=metadata.thumbnail_url)
 
         return embed
 
     @staticmethod
-    def create_now_playing_embed(metadata: YouTubeMetaData) -> discord.Embed:
-        """Create an embed for currently playing YouTube track"""
+    def create_now_playing_embed(metadata: AudioMetaData) -> discord.Embed:
+        """Create an embed for currently playing track with color based on source"""
+        if metadata.source == AudioSource.YOUTUBE:
+            color = 0xFF0000
+        elif metadata.source == AudioSource.SOUNDCLOUD:
+            color = 0xFF7700
+        else:
+            color = 0x808080
+        
         embed = discord.Embed(
             title="Now Playing",
             description=f"[{metadata.title}]({metadata.url})",
-            color=0xFF0000,
+            color=color,
         )
 
         embed.add_field(name="Channel", value=metadata.author, inline=True)
         embed.add_field(name="Duration", value=metadata.duration, inline=True)
-        embed.add_field(name="Likes", value=f"👍 {metadata.likes:,}", inline=True)
+        
+        if metadata.likes is not None:
+            embed.add_field(name="Likes", value=f"👍 {metadata.likes:,}", inline=True)
 
-        embed.set_thumbnail(url=metadata.thumbnail_url)
+        if metadata.thumbnail_url:
+            embed.set_thumbnail(url=metadata.thumbnail_url)
+        
         embed.set_footer(text="Use /skip to skip or /queue to see what's next")
 
         return embed
