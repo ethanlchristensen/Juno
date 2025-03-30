@@ -3,24 +3,32 @@ from dataclasses import dataclass, asdict, field
 from enum import Enum
 
 
+class AudioSource(Enum):
+    YOUTUBE = "youtube"
+    SOUNDCLOUD = "soundcloud"
+    DIRECT_URL = "direct_url"
+
+
 @dataclass
-class YouTubeMetaData:
+class AudioMetaData:
     title: str
     author: str
-    duration: str
-    likes: int
+    duration: int
     url: str
-    thumbnail_url: str
+    thumbnail_url: Optional[str] = None
+    source: AudioSource = AudioSource.YOUTUBE
+    likes: Optional[int] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "YouTubeMetaData":
+    def from_dict(cls, data: Dict[str, Any]) -> "AudioMetaData":
         return cls(
             title=data["title"],
             author=data["author"],
             duration=data["duration"],
-            likes=data["likes"],
             url=data["url"],
-            thumbnail_url=data["thumbnail_url"],
+            thumbnail_url=data.get("thumbnail_url"),
+            source=AudioSource(data.get("source", "youtube")),
+            likes=data.get("likes"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -28,7 +36,11 @@ class YouTubeMetaData:
             "title": self.title,
             "author": self.author,
             "duration": self.duration,
-            "likes": self.likes,
             "url": self.url,
             "thumbnail_url": self.thumbnail_url,
+            "source": self.source.value,
+            "likes": self.likes,
         }
+
+
+YouTubeMetaData = AudioMetaData

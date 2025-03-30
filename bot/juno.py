@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from bot.utils import JunoSlash
-from bot.services import AiServiceFactory, EmbedService
+from bot.services import AiServiceFactory, EmbedService, AudioService, MusicQueueService
 
 
 class Juno(commands.Bot):
@@ -16,6 +16,8 @@ class Juno(commands.Bot):
             provider=os.getenv("PREFERRED_PROVIDER", "openai")
         )
         self.embed_service = EmbedService()
+        self.audio_service = AudioService()
+        self.music_queue_service = MusicQueueService(self)
 
     async def setup_hook(self):
         self.juno_slash.load_commands()
