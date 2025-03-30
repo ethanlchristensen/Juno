@@ -1,15 +1,12 @@
+import discord
+
 from discord.ext import commands
 from discord import app_commands
-import discord
 from typing import TYPE_CHECKING, Optional
 
-from bot.services import (
-    MusicQueueService,
-    AudioService,
-    EmbedService,
-    FilterPreset,
-    QueuePaginationView,
-)
+from bot.services.music.types import FilterPreset
+from bot.services.embed_service import QueuePaginationView
+from bot.utils.decarators.command_logging import log_command_usage
 
 if TYPE_CHECKING:
     from bot.juno import Juno
@@ -22,6 +19,7 @@ class MusicCog(commands.Cog):
     @app_commands.command(
         name="join", description="Have Juno join the VC you are currently in."
     )
+    @log_command_usage()
     async def join(self, interaction: discord.Interaction):
         if not interaction.user.voice:
             await interaction.response.send_message(
@@ -40,6 +38,7 @@ class MusicCog(commands.Cog):
         query="Song name or YouTube link", filter="Audio filter to apply"
     )
     @app_commands.choices(filter=FilterPreset.get_choices())
+    @log_command_usage()
     async def play(
         self, interaction: discord.Interaction, query: str, filter: Optional[str]
     ):
@@ -57,6 +56,7 @@ class MusicCog(commands.Cog):
         filter_preset = FilterPreset.from_value(filter)
         metadata = self.bot.audio_service.get_metadata(info)
         metadata.filter_preset = filter_preset
+        metadata.requested_by = interaction.user.name
 
         if not player.voice_client:
             channel = interaction.user.voice.channel
@@ -77,6 +77,7 @@ class MusicCog(commands.Cog):
             await interaction.followup.send("Starting playback...", ephemeral=True)
 
     @app_commands.command(name="skip", description="Skip actively playing audio.")
+    @log_command_usage()
     async def skip(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
         if player.voice_client and player.voice_client.is_playing():
@@ -90,6 +91,7 @@ class MusicCog(commands.Cog):
     @app_commands.command(
         name="pause", description="Pause the currently playing audio."
     )
+    @log_command_usage()
     async def pause(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
         if player.voice_client and player.voice_client.is_playing():
@@ -103,6 +105,7 @@ class MusicCog(commands.Cog):
     @app_commands.command(
         name="resume", description="Resume audio that was previously paused."
     )
+    @log_command_usage()
     async def resume(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
         if player.voice_client and player.voice_client.is_paused():
@@ -116,6 +119,7 @@ class MusicCog(commands.Cog):
     @app_commands.command(
         name="leave", description="Have Juno leave the voice channel."
     )
+    @log_command_usage()
     async def leave(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
         if player.voice_client:
@@ -128,6 +132,7 @@ class MusicCog(commands.Cog):
             )
 
     @app_commands.command(name="queue", description="View the current music queue.")
+    @log_command_usage()
     async def queue(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 

@@ -54,10 +54,16 @@ class EmbedService:
 
         embed.add_field(
             name=self.source_labels.get(metadata.source, "Source"),
-            value=metadata.author,
+            value=(
+                metadata.author
+                if not metadata.author_url
+                else f"[{metadata.author}]({metadata.author_url})"
+            ),
             inline=True,
         )
-        embed.add_field(name="Duration", value=metadata.duration, inline=True)
+        embed.add_field(
+            name="Duration", value=self.format_duration(metadata.duration), inline=True
+        )
         embed.add_field(name="Position in Queue", value=f"#{position}", inline=True)
 
         if requested_by:
@@ -90,10 +96,16 @@ class EmbedService:
 
         embed.add_field(
             name=self.source_labels.get(metadata.source, "Source"),
-            value=metadata.author,
+            value=(
+                metadata.author
+                if not metadata.author_url
+                else f"[{metadata.author}]({metadata.author_url})"
+            ),
             inline=False,
         )
-        embed.add_field(name="Duration", value=metadata.duration, inline=False)
+        embed.add_field(
+            name="Duration", value=self.format_duration(metadata.duration), inline=False
+        )
 
         if metadata.likes is not None:
             embed.add_field(name="Likes :thumbsup:", value=metadata.likes, inline=False)
@@ -122,9 +134,14 @@ class EmbedService:
 
         if current_track and current_track.get("metadata"):
             metadata = current_track["metadata"]
+            author_text = (
+                metadata.author
+                if not metadata.author_url
+                else f"[{metadata.author}]({metadata.author_url})"
+            )
             embed.add_field(
                 name="Currently Playing:",
-                value=f"[{metadata.title}]({metadata.webpage_url}) | {metadata.duration} | Added by: {current_track.get('requested_by', 'Unknown')}",
+                value=f"[{metadata.title}]({metadata.webpage_url}) - {author_text}",
                 inline=False,
             )
 
@@ -138,18 +155,24 @@ class EmbedService:
             for i, item in enumerate(
                 queue_items[start_idx:end_idx], start=start_idx + 1
             ):
-                metadata = item.get("metadata")
+                metadata: AudioMetaData = item.get("metadata")
+                author_text = (
+                    metadata.author
+                    if not metadata.author_url
+                    else f"[{metadata.author}]({metadata.author_url})"
+                )
                 if metadata:
                     queue_display.append(
-                        f"**{i}.** [{metadata.title}]({metadata.webpage_url}) | {metadata.duration} | Added by: {item.get('requested_by', 'Unknown')}"
+                        f"- **{i}.** [{metadata.title}]({metadata.webpage_url}) - {author_text}\n  - {self.format_duration(metadata.duration)}\n  - Requested by: **{metadata.requested_by}**"
                     )
 
             embed.description = "\n".join(queue_display)
 
-            # Add pagination info
+            embed.add_field(name="Songs in Queue", value={len(queue_items)}, inline=False)
+
             total_pages = (len(queue_items) + items_per_page - 1) // items_per_page
             embed.set_footer(
-                text=f"Page {page}/{total_pages} | {len(queue_items)} songs in queue"
+                text=f"Page {page} / {total_pages}"
             )
 
         return embed
@@ -163,6 +186,36 @@ class EmbedService:
     ) -> discord.Embed:
         """Create an embed for displaying success messages"""
         return discord.Embed(title=title, description=message, color=0x2ECC71)
+
+    @staticmethod
+    def format_duration(seconds: int) -> str:
+        """Convert seconds to a friendly readable format with proper singular/plural forms"""
+        if not seconds or seconds <= 0:
+            return "Unknown"
+
+        days, remainder = divmod(seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, remainder = divmod(remainder, 60)
+        seconds = remainder
+
+        parts = []
+        if days > 0:
+            parts.append(f"{int(days)} {'day' if days == 1 else 'days'}")
+        if hours > 0:
+            parts.append(f"{int(hours)} {'hour' if hours == 1 else 'hours'}")
+        if minutes > 0:
+            parts.append(f"{int(minutes)} {'minute' if minutes == 1 else 'minutes'}")
+        if (
+            seconds > 0 or not parts
+        ):  # Always include seconds if it's the only component
+            parts.append(f"{int(seconds)} {'second' if seconds == 1 else 'seconds'}")
+
+        if len(parts) > 1:
+            result = ", ".join(parts[:-1]) + f" and {parts[-1]}"
+        else:
+            result = parts[0]
+
+        return result
 
 
 class QueuePaginationView(discord.ui.View):

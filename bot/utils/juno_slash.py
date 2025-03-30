@@ -1,6 +1,9 @@
 import os
+import logging
 from discord import app_commands
+from bot import settings
 
+logger = logging.getLogger("bot")
 
 class JunoSlash:
     def __init__(self, tree: app_commands.CommandTree):
@@ -8,19 +11,27 @@ class JunoSlash:
         self.tree = tree
 
     def load_commands(self, args=None):
-        for file in self.get_next_command():
+        logger.info(f"📁 Looking for commangs in: {self.path}")
+        command_files = [f[:-3] for f in os.listdir(self.path) 
+                       if f.endswith('.py') and f not in ["__pycache__", "__init__.py"]]
+        
+        # Define the load function for a command
+        def load_command(file_name):
+            class_name = "".join(word.capitalize() for word in file_name.split("_"))
             try:
-                class_name = "".join(word.capitalize() for word in file.split("_"))
-                print(f"Attempting to load command: {class_name}... ", end="")
-                command = self.import_from(f"bot.commands.{file}", class_name)
+                command = self.import_from(f"bot.commands.{file_name}", class_name)
                 command(self.tree, args=args)
-                print("Success!")
+                return True
             except Exception as e:
-                print(f"ERROR: {e}")
+                logger.error(f"Error details for {class_name}: {str(e)}")
+                return False
+        
+        # Use the utility function to load commands with visual feedback
+        settings.load_components(command_files, load_command, "command")
 
     def get_next_command(self):
         for file in os.listdir(self.path):
-            if file not in ["__pycache__", "__init__.py"]:
+            if file.endswith(".py") and file not in ["__pycache__", "__init__.py"]:
                 yield file[:-3]
 
     @staticmethod

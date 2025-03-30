@@ -2,7 +2,8 @@ import discord
 
 from discord import app_commands
 
-from bot.utils import is_admin
+from bot.utils.decarators.admin_check import is_admin
+from bot.utils.decarators.command_logging import log_command_usage
 
 
 class SyncCommand(app_commands.Group):
@@ -11,9 +12,9 @@ class SyncCommand(app_commands.Group):
             name="sync",
             description="Command to sync the slash commands with the guild.",
         )
+        @log_command_usage()
         @is_admin()
         async def sync(interaction: discord.Interaction):
-            print("Sync command called!")
             try:
                 await tree.sync()
                 embed = discord.Embed()

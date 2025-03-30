@@ -27,13 +27,10 @@ class MusicPlayer:
                     print(f"Voice client not connected for guild {self.guild.id}")
                     continue
 
-                # Create the audio source only when it's time to play it
                 try:
                     url = self.current["url"]
                     filter_preset = self.current.get("filter_preset")
-                    print(f"Creating audio source for {self.current['metadata'].title}")
 
-                    # Get a fresh audio source for this playback
                     audio_service = self.bot.audio_service
                     source = audio_service.get_audio_source(url, filter_preset)
 
@@ -43,9 +40,7 @@ class MusicPlayer:
                             self.next.set
                         ),
                     )
-                    print(f"Now playing: {self.current['metadata'].title}")
 
-                    # Send the "Now Playing" embed to the text channel
                     if self.text_channel:
                         embed = self.bot.embed_service.create_now_playing_embed(
                             self.current["metadata"]

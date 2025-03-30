@@ -64,6 +64,7 @@ class FilterPreset(Enum):
 class AudioMetaData:
     title: str
     author: str
+    author_url: str
     duration: int
     url: str
     webpage_url: str
@@ -71,6 +72,7 @@ class AudioMetaData:
     source: AudioSource = AudioSource.YOUTUBE
     likes: Optional[int] = None
     filter_preset: Optional[FilterPreset] = FilterPreset.NONE
+    requested_by: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AudioMetaData":
@@ -83,6 +85,7 @@ class AudioMetaData:
         return cls(
             title=data["title"],
             author=data["author"],
+            author_url=data["author_url"],
             duration=data["duration"],
             url=data["url"],
             webpage_url=data["webpage_url"],
@@ -90,12 +93,14 @@ class AudioMetaData:
             source=AudioSource(data.get("source", "youtube")),
             likes=data.get("likes"),
             filter_preset=filter_preset,
+            requested_by=data["requested_by"]
         )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "title": self.title,
             "author": self.author,
+            "author_url": self.author_url,
             "duration": self.duration,
             "url": self.url,
             "webpage_url": self.webpage_url,
@@ -103,4 +108,5 @@ class AudioMetaData:
             "source": self.source.value,
             "likes": self.likes,
             "filter_preset": self.filter_preset.value if self.filter_preset else None,
+            "requested_by": self.requested_by
         }

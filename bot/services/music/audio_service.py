@@ -85,10 +85,17 @@ class AudioService:
 
         if info.get("_type") == "playlist" and info.get("entries"):
             info = info["entries"][0]
+        
+        author_url = None
+        if source_type == AudioSource.YOUTUBE and info.get("channel_url"):
+            author_url = info.get("channel_url")
+        elif source_type == AudioSource.SOUNDCLOUD and info.get("uploader_url"):
+            author_url = info.get("uploader_url")
 
         return AudioMetaData(
             title=info.get("title", "Unknown Title"),
             author=info.get("uploader", info.get("artist", "Unknown Artist")),
+            author_url=author_url,
             duration=info.get("duration", 0),
             likes=info.get("like_count"),
             url=info.get("url", info.get("webpage_url", "")),
