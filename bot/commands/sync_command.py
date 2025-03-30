@@ -13,6 +13,7 @@ class SyncCommand(app_commands.Group):
         )
         @is_admin()
         async def sync(interaction: discord.Interaction):
+            print("Sync command called!")
             try:
                 await tree.sync()
                 embed = discord.Embed()

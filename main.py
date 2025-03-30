@@ -1,6 +1,7 @@
 import os
 import dotenv
 import discord
+import logging
 
 from bot.juno import Juno
 
