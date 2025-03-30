@@ -1,0 +1,23 @@
+[project]
+name = "juno"
+version = "0.1.0"
+description = "Discord Bot"
+authors = [
+    {name = "ethanlchristensen",email = "ethanlchristensen@outlook.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "discord-py (>=2.5.2,<3.0.0)",
+    "python-dotenv (>=1.1.0,<2.0.0)",
+    "openai (>=1.69.0,<2.0.0)",
+    "ollama (>=0.4.7,<0.5.0)",
+    "yt-dlp (>=2025.3.27,<2026.0.0)",
+    "pynacl (>=1.5.0,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
