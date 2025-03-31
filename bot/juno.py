@@ -11,8 +11,14 @@ from bot.services import AiServiceFactory, EmbedService, AudioService, MusicQueu
 
 class Juno(commands.Bot):
     def __init__(self, intents):
-        status = discord.Status.invisible if bool(int(os.getenv("INVISIBLE"))) else discord.Status.online
-        super().__init__(command_prefix="!", intents=intents, status=status, activity=None)
+        status = (
+            discord.Status.invisible
+            if bool(int(os.getenv("INVISIBLE")))
+            else discord.Status.online
+        )
+        super().__init__(
+            command_prefix="!", intents=intents, status=status, activity=None
+        )
         self.start_time = time.time()
         self.juno_slash = JunoSlash(self.tree)
         self.ai_service = AiServiceFactory.get_service(
@@ -27,6 +33,7 @@ class Juno(commands.Bot):
     async def setup_hook(self):
         self.juno_slash.load_commands()
         await self.load_cogs()
+        await self.tree.sync()
 
     async def load_cogs(self):
         cogs_dir = os.path.join(os.getcwd(), "bot", "cogs")
