@@ -55,17 +55,21 @@ class MusicCog(commands.Cog):
             player.voice_client = vc
 
         queue_position = player.queue.qsize() + 1
+        
+        should_start_playback = not player.is_playing and player.queue.qsize() == 1
+
         await player.enqueue(
             metadata.url, metadata, filter_preset, text_channel=interaction.channel
         )
 
-        if player.is_playing:
+        if should_start_playback:
+            await interaction.followup.send("Starting playback...", ephemeral=True)
+        else:
+            queue_position = player.queue.qsize()
             embed = self.bot.embed_service.create_added_to_queue_embed(
                 metadata, queue_position, interaction.user.display_name
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.followup.send("Starting playback...", ephemeral=True)
 
     @app_commands.command(name="skip", description="Skip actively playing audio.")
     @log_command_usage()

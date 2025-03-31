@@ -23,105 +23,112 @@ class MusicPlayer:
         self.play_start_time = None
         self.paused_at = None
         self.is_playing = False
+
         # Flag to distinguish between normal song end and manual operations
+        # i.e. did the song end on its own, or did we end it to start it up again with /pause+resume or /filter
         self.manual_stop = False
         self.logger = logging.getLogger(__name__)
 
-    async def play_loop(self):
+    async def play_loop(self) -> None:
+        """Keep playing while items are in the queue"""
         while True:
             self.next.clear()
-            
-            # If we've manually stopped for filter/pause but not advancing queue
+
             if self.manual_stop:
-                # Wait for the next action but don't get a new song
+                self.logger.info("[PLAY_LOOP] Manual stop set — waiting for resume/filter change.")
                 self.manual_stop = False
                 await self.next.wait()
                 continue
-                
-            # If nothing is playing or we need the next song
+
             if not self.is_playing:
-                # Get the next song if queue isn't empty
                 if not self.queue.empty():
                     self.current = await self.queue.get()
+                    self.logger.info(f"[PLAY_LOOP] Got next song from queue: {self.current['metadata'].title}")
                 else:
-                    # Wait for something to be added to the queue
                     try:
+                        self.logger.info("[PLAY_LOOP] Queue is empty — waiting up to 300s for new song.")
                         self.current = await asyncio.wait_for(self.queue.get(), timeout=300)
+                        self.logger.info(f"[PLAY_LOOP] Got song after waiting: {self.current['metadata'].title}")
                     except asyncio.TimeoutError:
+                        self.logger.info("[PLAY_LOOP] Timed out waiting for song. Retrying...")
                         await asyncio.sleep(1)
                         continue
 
-            # Check if voice client is valid
             if not self.voice_client or not self.voice_client.is_connected():
-                self.logger.error(f"Voice client not connected for guild {self.guild.id}")
+                self.logger.error(f"[PLAY_LOOP] Voice client not connected for guild {self.guild.id}")
                 await asyncio.sleep(1)
                 continue
 
             try:
                 url = self.current["url"]
                 filter_preset = self.current.get("filter_preset")
-                
-                # Start playback
-                audio_service = self.bot.audio_service
-                source = audio_service.get_audio_source(url, filter_preset)
-                
-                # Stop any existing playback
+
                 if self.voice_client.is_playing():
                     self.voice_client.stop()
-                
+
+                self.logger.info(f"[PLAY_LOOP] Starting playback for: {self.current['metadata'].title}")
                 self.is_playing = True
-                self.voice_client.play(
-                    source,
-                    after=lambda x: self.bot.loop.call_soon_threadsafe(
-                        self._song_finished
-                    ),
-                )
+
+                audio_service = self.bot.audio_service
+                source = audio_service.get_audio_source(url, filter_preset)
+
+                current_track = self.current
+
+                def _after_play(err):
+                    if self.current == current_track:
+                        self.bot.loop.call_soon_threadsafe(self._song_finished)
+
+                self.voice_client.play(source, after=_after_play)
+
                 self.play_start_time = time.time()
                 self.paused_at = None
-                
-                # Send now playing message
+
                 if self.text_channel:
                     embed = self.bot.embed_service.create_now_playing_embed(
                         self.current["metadata"]
                     )
                     await self.text_channel.send(embed=embed)
-                    
-                # Wait for the song to finish or be interrupted
+
                 await self.next.wait()
-                
+
             except Exception as e:
-                self.logger.error(f"Error in play_loop for guild {self.guild.id}: {e}")
+                self.logger.error(f"[PLAY_LOOP] Exception during playback: {e}")
                 import traceback
                 traceback.print_exc()
                 self.is_playing = False
                 await asyncio.sleep(1)
 
-    def _song_finished(self):
-        """Called when a song finishes playing naturally"""
-        if not self.manual_stop:
-            # Only mark as not playing if we didn't manually stop
-            self.is_playing = False
-        self.next.set()
+    def _song_finished(self) -> None:
+        """Callback for when a song is finished"""
+        self.logger.info(f"[SONG_FINISHED] Finished: {self.current['metadata'].title if self.current else 'Unknown'}")
 
-    async def enqueue(self, url, metadata, filter_preset=None, text_channel=None):
+        if self.manual_stop:
+            self.manual_stop = False
+        else:
+            self.is_playing = False
+            self.current = None
+            self.next.set()
+
+    async def enqueue(self, url, metadata, filter_preset=None, text_channel=None) -> None:
+        """Add a new song to the queue"""
         if text_channel:
             self.text_channel = text_channel
 
+        self.logger.info(f"[ENQUEUE] Adding song to queue: {metadata.title}")
         await self.queue.put(
             {"url": url, "metadata": metadata, "filter_preset": filter_preset}
         )
 
-    async def skip(self):
-        """Skip the current song and move to the next in queue"""
+    async def skip(self) -> bool:
+        """Skip the currently playing song"""
+        self.logger.info("[SKIP] Skip command received.")
         if self.voice_client and (self.voice_client.is_playing() or self.voice_client.is_paused()):
-            # Don't set manual_stop because we want to advance the queue
-            self.is_playing = False
             self.voice_client.stop()
-            self.next.set()
             return True
         return False
 
-    async def pause(self):
+    async def pause(self) -> bool:
+        """Pause the currently playing audio"""
         if self.voice_client and self.voice_client.is_playing():
             self.voice_client.pause()
             if self.play_start_time:
@@ -131,7 +138,8 @@ class MusicPlayer:
             return True
         return False
 
-    async def resume(self):
+    async def resume(self) -> bool:
+        """Resume a song that was paused"""
         if not self.current:
             return False
 
@@ -170,7 +178,7 @@ class MusicPlayer:
             return True
         return False
     
-    async def set_filter(self, new_filter: FilterPreset):
+    async def set_filter(self, new_filter: FilterPreset) -> bool:
         """Apply a filter to the current song without advancing the queue"""
         if not self.current:
             return False
