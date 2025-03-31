@@ -33,7 +33,6 @@ class Juno(commands.Bot):
     async def setup_hook(self):
         self.juno_slash.load_commands()
         await self.load_cogs()
-        await self.tree.sync()
 
     async def load_cogs(self):
         cogs_dir = os.path.join(os.getcwd(), "bot", "cogs")
