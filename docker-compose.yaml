@@ -1,5 +1,6 @@
 services:
   juno-dev:
+    container_name: juno-dev
     build:
       context: .
       dockerfile: Dockerfile
@@ -7,6 +8,7 @@ services:
       - development.env
     restart: unless-stopped
   juno-prod:
+    container_name: juno-prod
     build:
       context: .
       dockerfile: Dockerfile
