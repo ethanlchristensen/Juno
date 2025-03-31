@@ -1,4 +1,5 @@
 import discord
+import logging
 from typing import List, Optional
 from datetime import datetime
 
@@ -8,6 +9,7 @@ from bot.services import AudioSource, AudioMetaData
 class EmbedService:
     """Service for creating various Discord embeds"""
 
+    logger = logging.getLogger(__name__)
     source_labels = {AudioSource.SOUNDCLOUD: "Artist", AudioSource.YOUTUBE: "Channel"}
 
     def create_basic_embed(

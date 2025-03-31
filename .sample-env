@@ -1,6 +1,7 @@
 TOKEN=<bot token>
 ADMINS=[<user id>, <user id>, . . . ]
 PREFERRED_PROVIDER="ollama"
+INVISIBLE=0 # should the bot show as offline or not? 0 - false, 1 - true
 
 # AI Settings
 OLLAMA_ENDPOINT=localhost:11434

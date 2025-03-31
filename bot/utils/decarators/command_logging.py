@@ -1,33 +1,27 @@
 import logging
-import inspect
 import functools
-from typing import Callable, Any
 import discord
+from typing import Callable, TypeVar, ParamSpec, Awaitable, cast
+
+P = ParamSpec('P')
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
-def log_command_usage():
+def log_command_usage() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
     Decorator that logs when a slash command is used, who used it, and with what arguments.
     To be used with Discord slash commands in both cogs and standalone functions.
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
-            # Determine if this is a cog method or a standalone command
-            interaction = None
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            # Find the interaction object
+            interaction = next((arg for arg in args if isinstance(arg, discord.Interaction)), 
+                             kwargs.get('interaction', None))
             
-            # For cog methods, args[0] is self and args[1] is interaction
-            if len(args) >= 2 and isinstance(args[1], discord.Interaction):
-                interaction = args[1]
-                command_name = func.__name__
-            # For standalone commands, args[0] is interaction
-            elif len(args) >= 1 and isinstance(args[0], discord.Interaction):
-                interaction = args[0]
-                command_name = func.__name__
-            
-            # Log the command usage if we found an interaction
             if interaction:
+                command_name = func.__name__
                 user = f"{interaction.user.name} ({interaction.user.id})"
                 guild = f"{interaction.guild.name} ({interaction.guild.id})" if interaction.guild else "DM"
                 args_str = ', '.join([f"{k}={repr(v)}" for k, v in kwargs.items()])

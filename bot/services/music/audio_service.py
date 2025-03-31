@@ -1,6 +1,8 @@
+import os
 import yt_dlp
 import discord
-import os
+import logging
+
 from typing import Optional, Dict, Any, Union
 from urllib.parse import urlparse
 
@@ -15,6 +17,7 @@ class AudioService:
             "noplaylist": True,
             "extract_flat": False,
         }
+        self.logger = logging.getLogger(__name__)
 
     def is_direct_media_url(self, url: str) -> bool:
         """Check if the URL is a direct link to a media file."""
@@ -62,10 +65,20 @@ class AudioService:
                         raise
 
     def get_audio_source(
-        self, url: str, filter_preset: Optional[FilterPreset] = None
+        self,
+        url: str,
+        filter_preset: Optional[FilterPreset] = None,
+        position: float = 0,
     ) -> discord.FFmpegPCMAudio:
         before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-        options = "-vn"
+
+        if position > 0:
+            self.logger.info(
+                "Recieved position when getting audio source. Attempting to seek to position."
+            )
+            options = f"-vn -ss {position}"
+        else:
+            options = "-vn"
 
         if filter_preset and filter_preset != FilterPreset.NONE:
             if ffmpeg_filter := filter_preset.ffmpeg_filter:
@@ -85,7 +98,7 @@ class AudioService:
 
         if info.get("_type") == "playlist" and info.get("entries"):
             info = info["entries"][0]
-        
+
         author_url = None
         if source_type == AudioSource.YOUTUBE and info.get("channel_url"):
             author_url = info.get("channel_url")

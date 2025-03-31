@@ -20,6 +20,9 @@ class OpenAIService(BaseService):
             "PREFERRED_OPENAI_MODEL", "gpt-4o-mini"
         )
 
+        self.logger.info(f"Intializing OllamaService with default_model={self.default_model}")
+
+
     def chat(
         self, messages: List[Message], model: Optional[str] = None
     ) -> AIChatResponse:
@@ -30,8 +33,10 @@ class OpenAIService(BaseService):
                 self.map_message_to_provider(message, "openai") for message in messages
             ]
 
+            self.logger.info(f"Calling OpenAIService.chat() with model={model}")
+
             raw_response = self.client.chat.completions.create(
-                model=model_to_use, messages=messages
+                model=model_to_use, messages=openai_messages
             )
 
             return AIChatResponse(
