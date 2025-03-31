@@ -4,5 +4,12 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - development.env
+    restart: unless-stopped
+  juno-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - production.env
     restart: unless-stopped
