@@ -179,7 +179,14 @@ class MusicPlayer:
         return False
     
     async def set_filter(self, new_filter: FilterPreset) -> bool:
-        """Apply a filter to the current song without advancing the queue"""
+        """Apply a filter to the current song without advancing the queue
+
+        Args:
+            new_filter (FilterPreset): The new filter to apply to the song
+
+        Returns:
+            bool: True if it succeeded, otherwise False
+        """
         if not self.current:
             return False
 
@@ -225,3 +232,62 @@ class MusicPlayer:
             
             return True
         return False
+    
+    async def seek(self, position_seconds: int) -> bool:
+        """
+        Seek to a specified position in the current song
+        
+        Args:
+            position_seconds: Position in seconds to seek to
+            
+        Returns:
+            bool: True if succeeded, False otherwise
+        """
+        if not self.current:
+            self.logger.info("[SEEK] No current track to seek in")
+            return False
+            
+        if not self.voice_client or not (self.voice_client.is_playing() or self.voice_client.is_paused()):
+            self.logger.info("[SEEK] Voice client not playing")
+            return False
+        
+        # Validate the position is within the song duration
+        duration = self.current["metadata"].duration
+        if duration and position_seconds > duration:
+            self.logger.info(f"[SEEK] Requested position {position_seconds}s exceeds song duration {duration}s")
+            return False
+        
+        # Set the manual_stop flag to prevent queue advancement
+        self.manual_stop = True
+        
+        # Remember if it was paused
+        was_paused = self.voice_client.is_paused()
+        
+        # Stop current playback but don't advance queue
+        self.voice_client.stop()
+        
+        # Create new source at the requested position
+        url = self.current["url"]
+        filter_preset = self.current.get("filter_preset")
+        audio_service = self.bot.audio_service
+        
+        self.logger.info(f"[SEEK] Seeking to position {position_seconds}s in: {self.current['metadata'].title}")
+        source = audio_service.get_audio_source(url, filter_preset, position=position_seconds)
+        
+        # Play with the new position
+        self.voice_client.play(
+            source, 
+            after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished)
+        )
+        
+        # Update timing info
+        self.play_start_time = time.time() - position_seconds
+        
+        # If it was paused before, pause it again
+        if was_paused:
+            self.voice_client.pause()
+            self.paused_at = position_seconds
+        else:
+            self.paused_at = None
+        
+        return True
