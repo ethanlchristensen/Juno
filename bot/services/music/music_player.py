@@ -122,7 +122,7 @@ class MusicPlayer:
     async def skip(self) -> bool:
         """Skip the currently playing song"""
         self.logger.info("[SKIP] Skip command received.")
-        if self.voice_client and (self.voice_client.is_playing() or self.voice_client.is_paused()):
+        if self.voice_client and (self.voice_client.is_playing() or self.voice_client.is_paused() or not self.queue.empty()):
             self.voice_client.stop()
             return True
         return False
