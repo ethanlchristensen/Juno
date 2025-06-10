@@ -5,12 +5,12 @@ logger = logging.getLogger(__name__)
 from typing import List, Dict
 from abc import ABC, abstractmethod
 
-from .types import Message
+from .types import Message, AIChatResponse
 
 
 class BaseService(ABC):
     @abstractmethod
-    def chat(self, model: str, messages: List[Dict[str, str]], **kwargs) -> Dict:
+    def chat(self, model: str, messages: List[Dict[str, str]], **kwargs) -> AIChatResponse:
         pass
 
     @staticmethod

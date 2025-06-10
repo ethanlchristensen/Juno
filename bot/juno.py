@@ -2,11 +2,13 @@ import os
 import time
 import discord
 import logging
+import aiohttp
+import base64
 
 from discord.ext import commands
 
 from bot.utils import JunoSlash
-from bot.services import AiServiceFactory, EmbedService, AudioService, MusicQueueService
+from bot.services import AiServiceFactory, EmbedService, AudioService, MusicQueueService, AIChatResponse, Message
 
 
 class Juno(commands.Bot):
@@ -77,3 +79,32 @@ class Juno(commands.Bot):
             f"🌐 Connected to {guild_count} guilds with access to {user_count} users"
         )
         self.logger.info(f"✅ Juno is online!")
+    
+    async def on_message(self, message: discord.Message):
+        if message.author == self.user:
+            return
+
+        if message.content.startswith("<@1355672570871152824>"):
+            async with message.channel.typing():
+                images = []
+                for attachment in message.attachments:
+                    if attachment.content_type and attachment.content_type.startswith("image/"):
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(attachment.url) as resp:
+                                if resp.status == 200:
+                                    img_bytes = await resp.read()
+                                    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                                    images.append({
+                                        "type": attachment.content_type,
+                                        "data": img_b64
+                                    })
+
+                response: AIChatResponse = self.ai_service.chat(messages=[
+                    Message(
+                        role="user",
+                        content=message.content.replace("<@1355672570871152824>", "").strip(),
+                        images=images
+                    )
+                ])
+
+                await message.channel.send(response.content)

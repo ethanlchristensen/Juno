@@ -38,7 +38,7 @@ class OpenAIService(BaseService):
             raw_response = self.client.chat.completions.create(
                 model=model_to_use, messages=openai_messages
             )
-
+            
             return AIChatResponse(
                 model=model_to_use,
                 content=raw_response.choices[0].message.content,

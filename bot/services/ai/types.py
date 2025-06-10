@@ -8,12 +8,15 @@ class Role(str, Enum):
     USER = "user"
     ASSISTANT = "assistant"
 
+class Image:
+    type: str
+    data: str
 
 @dataclass
 class Message:
     role: Role
     content: str
-    images: Optional[List[str]] = None
+    images: Optional[List[Image]] = None
     name: Optional[str] = None
 
     @classmethod
