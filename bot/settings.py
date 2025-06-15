@@ -57,6 +57,11 @@ LOGGING_CONFIG = {
             "handlers": ["rich_console"],
             "level": "ERROR",
             "propagate": False
+        },
+        "google_genai": {
+            "handlers": ["rich_console"],
+            "level": "INFO",
+            "propagate": False
         }
     }
 }

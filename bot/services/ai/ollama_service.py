@@ -18,7 +18,7 @@ class OllamaService(BaseService):
         )
         self.logger.info(f"Intializing OllamaService with host={host} and default_model={self.default_model}")
 
-    def chat(
+    async def chat(
         self, messages: List[Message], model: Optional[str] = None
     ) -> AIChatResponse:
         try:
@@ -28,7 +28,7 @@ class OllamaService(BaseService):
                 self.map_message_to_provider(message, "ollama") for message in messages
             ]
 
-            self.logger.info(f"Calling OllamaService.chat() with model={model}")
+            self.logger.info(f"Calling OllamaService.chat() with model={model_to_use}")
 
             raw_response = self.client.chat(
                 model=model_to_use, messages=ollama_messages

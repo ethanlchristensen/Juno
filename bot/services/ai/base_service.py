@@ -10,7 +10,7 @@ from .types import Message, AIChatResponse
 
 class BaseService(ABC):
     @abstractmethod
-    def chat(self, model: str, messages: List[Dict[str, str]], **kwargs) -> AIChatResponse:
+    async def chat(self, model: str, messages: List[Dict[str, str]], **kwargs) -> AIChatResponse:
         pass
 
     @staticmethod
@@ -41,5 +41,24 @@ class BaseService(ABC):
                     }
                     for image in message.images
                 )
+
+            return mapped_message
+        elif provider == "google":
+            mapped_message = {
+                "role": message.role,
+                "parts": [{"text": message.content}]
+            }
+
+            if mapped_message["role"] in ["assistant", "system"]:
+                mapped_message["role"] = "model"
+            
+            if images := message.images:
+                for image in images:
+                    mapped_message["parts"].append({
+                        "inline_data": {
+                            "mime_type": image.get("type", ""),
+                            "data": image.get("data", "")
+                        }
+                    })
 
             return mapped_message

@@ -11,19 +11,18 @@ class OpenAIService(BaseService):
     def __init__(self, config: Optional[AIServiceConfig] = None):
         self.logger = logging.getLogger(__name__)
 
-        api_key = (config and config.api_key) or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OpenAI API key is not set")
-
-        self.client = openai.Client(api_key=api_key)
+        if api_key := (config and config.api_key) or os.getenv("OPENAI_API_KEY"):
+            self.client = openai.Client(api_key=api_key)
+        else:
+            raise ValueError("OPENAI_API_KEY is not set")
+        
         self.default_model = (config and config.model) or os.getenv(
             "PREFERRED_OPENAI_MODEL", "gpt-4o-mini"
         )
+        self.logger.info(f"Intializing OpenAIService with default_model={self.default_model}")
 
-        self.logger.info(f"Intializing OllamaService with default_model={self.default_model}")
 
-
-    def chat(
+    async def chat(
         self, messages: List[Message], model: Optional[str] = None
     ) -> AIChatResponse:
         try:
@@ -33,7 +32,7 @@ class OpenAIService(BaseService):
                 self.map_message_to_provider(message, "openai") for message in messages
             ]
 
-            self.logger.info(f"Calling OpenAIService.chat() with model={model}")
+            self.logger.info(f"Calling OpenAIService.chat() with model={model_to_use}")
 
             raw_response = self.client.chat.completions.create(
                 model=model_to_use, messages=openai_messages

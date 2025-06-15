@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 from .base_service import BaseService
 from .ollama_service import OllamaService
 from .openai_service import OpenAIService
+from .google_service import GoogleAIService
 
 
 class AiServiceFactory:
@@ -15,5 +16,7 @@ class AiServiceFactory:
             return OllamaService()
         elif provider == "openai":
             return OpenAIService()
+        elif provider == "google":
+            return GoogleAIService()
         else:
             raise ValueError(f"Invalid provider: {provider}")
