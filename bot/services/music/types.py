@@ -28,7 +28,6 @@ class FilterPreset(Enum):
     VIBRATO = ("vibrato", "Vibrato", "vibrato=f=6.5:d=0.5")
     TREMOLO = ("tremolo", "Tremolo", "tremolo=f=6.5:d=0.5")
     DISTORTION = ("distortion", "Distortion", "areverse,areverse")
-    KARAOKE = ("karaoke", "Karaoke", "stereotools=mlev=0.015625")
     MONO = ("mono", "Mono", "pan=mono|c0=0.5*c0+0.5*c1")
     VOLUME_BOOST = ("volume_boost", "Volume Boost", "volume=2.0")
     LOFI = ("lofi", "Lo-Fi", "aresample=8000,aresample=44100")
@@ -38,6 +37,21 @@ class FilterPreset(Enum):
         "chorus=0.5:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
     )
     REVERSE = ("reverse", "Reverse", "areverse")
+    PHASER = ("phaser", "Phaser", "aphaser=in_gain=0.4:out_gain=0.74:delay=3:decay=0.4:speed=0.5:type=triangular")
+    CHIPMUNK = ("chipmunk", "Chipmunk", "asetrate=48000*1.5,aresample=48000")
+    SLOWMO = ("slowmo", "Slow Motion", "asetrate=48000*0.5,aresample=48000")
+    ROBOT = ("robot", "Robot Voice", "afftfilt=real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75")
+    UNDERWATER = ("underwater", "Underwater", "lowpass=f=800,highpass=f=200,chorus=0.7:0.9:55:0.4:0.25:2")
+    TELEPHONE = ("telephone", "Telephone", "highpass=f=900,lowpass=f=3000")
+    CRYSTALIZE = ("crystalize", "Crystalize", "crystalizer=intensity=0.7:resonance=0.5")
+    COMPRESSOR = ("compressor", "Compressor", "acompressor=threshold=0.089:ratio=9:attack=200:release=1000")
+    EARWAX = ("earwax", "Earwax", "earwax")
+    # HAAS = ("haas", "Haas Effect", "haas=level_in=1:level_out=1:side_gain=0.5:middle_source=mid:middle_phase=0")
+    STEREOWIDE = ("stereowide", "Stereo Wide", "stereowiden=delay=20:feedback=0.3:crossfeed=0.3:drymix=0.8")
+    PITCH_UP = ("pitch_up", "Pitch Up", "asetrate=48000*1.2,aresample=48000,atempo=0.833")
+    PITCH_DOWN = ("pitch_down", "Pitch Down", "asetrate=48000*0.8,aresample=48000,atempo=1.25")
+    EIGHT_BIT = ("8bit", "8-Bit", "aresample=8000:resampler=soxr,aresample=48000:resampler=soxr")
+
 
     def __init__(self, value: str, display_name: str, ffmpeg_filter: Optional[str]):
         self._value_ = value

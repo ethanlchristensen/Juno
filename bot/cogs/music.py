@@ -2,7 +2,7 @@ import discord
 
 from discord.ext import commands
 from discord import app_commands
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 from bot.services.music.types import FilterPreset
 from bot.services.embed_service import QueuePaginationView
@@ -16,6 +16,29 @@ if TYPE_CHECKING:
 class MusicCog(commands.Cog):
     def __init__(self, bot: "Juno"):
         self.bot = bot
+
+    async def filter_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+        """Autocomplete for filter presets"""
+        choices = []
+        current_lower = current.lower()
+        
+        for preset in FilterPreset:
+            # Filter based on user input
+            if (current_lower in preset.display_name.lower() or 
+                current_lower in preset.value.lower()):
+                choices.append(
+                    app_commands.Choice(name=preset.display_name, value=preset.value)
+                )
+                
+                # Discord limits autocomplete to 25 choices
+                if len(choices) >= 25:
+                    break
+                    
+        return choices
 
     @app_commands.command(
         name="join", description="Have Juno join the VC you are currently in."
@@ -33,7 +56,7 @@ class MusicCog(commands.Cog):
     @app_commands.describe(
         query="Song name or YouTube link", filter="Audio filter to apply"
     )
-    @app_commands.choices(filter=FilterPreset.get_choices())
+    @app_commands.autocomplete(filter=filter_autocomplete)
     @log_command_usage()
     @require_voice_channel(ephemeral=True)
     async def play(
@@ -49,10 +72,20 @@ class MusicCog(commands.Cog):
         metadata.filter_preset = filter_preset
         metadata.requested_by = interaction.user.name
 
-        if not player.voice_client:
-            channel = interaction.user.voice.channel
-            vc = await channel.connect(self_deaf=True)
-            player.voice_client = vc
+        try:
+            if not player.voice_client:
+                channel = interaction.user.voice.channel
+                vc = await channel.connect(self_deaf=True)
+                player.voice_client = vc
+        except discord.ClientException:
+            # If the bot is already connected, let's grab the vc.
+            player.voice_client = interaction.guild.voice_client
+        except Exception as e:
+            await interaction.followup.send(
+                f"Failed to join voice channel: {e}", ephemeral=True
+            )
+            return
+        
 
         queue_position = player.queue.qsize() + 1
         
@@ -153,16 +186,16 @@ class MusicCog(commands.Cog):
     @app_commands.command(
         name="filter", description="Apply a new audio filter to the current track."
     )
-    @app_commands.choices(new_filter=FilterPreset.get_choices())
+    @app_commands.autocomplete(new_filter=filter_autocomplete)
     @log_command_usage()
     @require_voice_channel(ephemeral=True)
     async def filter(
         self,
         interaction: discord.Interaction,
-        new_filter: app_commands.Choice[str],
+        new_filter: str,
     ):
         player = self.bot.music_queue_service.get_player(interaction.guild)
-        filter_enum = FilterPreset.from_value(new_filter.value)
+        filter_enum = FilterPreset.from_value(new_filter)
 
         if await player.set_filter(filter_enum):
             await interaction.response.send_message(
