@@ -827,4 +827,24 @@ class VoiceRecognition(commands.Cog):
 
 
 async def setup(bot):
+    # Check if voice recognition is enabled via environment variable
+    if not os.getenv("ENABLE_VOICE_RECOGNITION", "false").lower() == "true":
+        bot.logger.info("Voice recognition cog disabled via ENABLE_VOICE_RECOGNITION environment variable")
+        return
+    
+    # Check for required dependencies
+    try:
+        import whisper
+        import torch
+        from elevenlabs.client import ElevenLabs
+        from discord.ext import voice_recv
+    except ImportError as e:
+        bot.logger.error(f"Voice recognition cog disabled - missing dependencies: {e}")
+        return
+    
+    # Check for required API keys if using ElevenLabs
+    if not os.getenv("ELEVENLABS_API_KEY"):
+        bot.logger.warning("ELEVENLABS_API_KEY not found - voice synthesis may not work")
+    
+    bot.logger.info("Loading voice recognition cog...")
     await bot.add_cog(VoiceRecognition(bot))
