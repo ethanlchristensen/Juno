@@ -66,12 +66,15 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
 
                 response = await self.bot.ai_service.chat(messages=messages)
 
-                embed = self.bot.embed_service.create_morning_embed(
-                    message=response.content,
-                    img_link="https://imgur.com/gallery/thumbs-up-emoji-KGuX4Hc#J39rTdX",
+                embed, emoji_file = self.bot.embed_service.create_morning_embed(
+                    message=response.content
                 )
-
-                await channel.send(embed=embed)
+                await channel.send(
+                    embed=embed,
+                    file=discord.File(
+                        os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file
+                    ),
+                )
                 self.bot.logger.info(
                     f"Sent morning message to {channel.name} in {guild.name}"
                 )
@@ -136,6 +139,10 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
     @is_admin()
     async def test_morning_message(self, interaction: discord.Interaction):
         """Test the morning message functionality"""
+        await interaction.followup.send(
+            content="Sending test morning message...", ephemeral=True
+        )
+
         try:
             # Generate motivational message
             messages = [
@@ -151,14 +158,16 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
 
             response = await self.bot.ai_service.chat(messages=messages)
 
-            embed = self.bot.embed_service.create_morning_embed(
+            embed, emoji_file = self.bot.embed_service.create_morning_embed(
                 message=response.content
             )
 
-            await interaction.followup.send(
-                content="Sending test morning message...", ephemeral=True
+            await interaction.channel.send(
+                embed=embed,
+                file=discord.File(
+                    os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file
+                ),
             )
-            await interaction.channel.send(embed=embed)
             self.bot.logger.info(
                 f"Sent test morning message to {interaction.channel.name} in {interaction.guild.name}"
             )

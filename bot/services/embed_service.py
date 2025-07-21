@@ -191,18 +191,17 @@ class EmbedService:
         """Create an embed for displaying success messages"""
         return discord.Embed(title=title, description=message, color=0x2ECC71)
     
-    def create_morning_embed(self, message: str, title: str = "🌅 Good Morning!") -> discord.Embed:
+    def create_morning_embed(self, message: str, title: str = "🌅 Good Morning!") -> tuple[discord.Embed, str]:
         """Create an embed for morning messages"""
         embed = discord.Embed(title=title, description=message, color=0xF1C40F)
         embed.set_footer(text="Have a great day!")
         embed.timestamp = datetime.now()
         
-        # Use a direct file path (Discord will handle local files)
+        # Select random emoji file
         emoji_filename = random.choice(os.listdir(os.path.join(os.getcwd(), 'emojis')))
-        emoji_path = os.path.join(os.getcwd(), 'emojis', emoji_filename)
-        embed.set_thumbnail(url=f"file://{emoji_path}")
+        embed.set_thumbnail(url=f"attachment://{emoji_filename}")
         
-        return embed
+        return embed, emoji_filename
 
     @staticmethod
     def format_duration(seconds: int) -> str:
