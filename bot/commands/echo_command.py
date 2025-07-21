@@ -10,8 +10,9 @@ class EchoCommand(app_commands.Command):
         @tree.command(name="echo", description="Send a message as the bot with optional attachment")
         @log_command_usage()
         @is_admin()
-        async def echo(interaction: discord.Interaction, message: str, attachment: discord.Attachment = None):            
+        async def echo(interaction: discord.Interaction, message: str, attachment: discord.Attachment = None):
+            channel = interaction.channel            
             if attachment:
-                await interaction.channel.send(message, file=await attachment.to_file())
+                await channel.send(message, file=await attachment.to_file())
             else:
-                await interaction.channel.send(message)
+                await channel.send(message)
