@@ -32,7 +32,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
     def cog_unload(self):
         self.morning_message.cancel()
 
-    @tasks.loop(time=time(16, 0, tzinfo=timezone.utc))
+    @tasks.loop(time=time(15, 18, tzinfo=timezone.utc))
     async def morning_message(self):
         """Send motivational morning messages to all configured channels"""
         if not self.morning_channels:
