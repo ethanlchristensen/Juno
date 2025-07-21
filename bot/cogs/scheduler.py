@@ -17,7 +17,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
 
     def _load_morning_channels(self):
         """Load morning channels from environment variable"""
-        channels_str = os.getenv("MORNING_CHANNELS", "{}")
+        channels_str = os.getenv("MORNING_CHANNEL_IDS", "{}")
         try:
             # Parse JSON and convert keys to integers
             channels_data = json.loads(channels_str)
@@ -26,13 +26,13 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
                 for guild_id, channel_id in channels_data.items()
             }
         except (json.JSONDecodeError, ValueError) as e:
-            self.bot.logger.error(f"Error parsing MORNING_CHANNELS: {e}")
+            self.bot.logger.error(f"Error parsing MORNING_CHANNEL_IDS: {e}")
             return {}
 
     def cog_unload(self):
         self.morning_message.cancel()
 
-    @tasks.loop(time=time(14, 0, tzinfo=timezone.utc))
+    @tasks.loop(time=time(16, 0, tzinfo=timezone.utc))
     async def morning_message(self):
         """Send motivational morning messages to all configured channels"""
         if not self.morning_channels:
