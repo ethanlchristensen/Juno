@@ -153,7 +153,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
 
             embed = self.bot.embed_service.create_morning_embed(
                 message=response.content,
-                img_link="https://imgur.com/gallery/thumbs-up-emoji-KGuX4Hc#J39rTdX",
+                img_link="https://i.imgur.com/J39rTdX.png",
             )
 
             await interaction.followup.send(
