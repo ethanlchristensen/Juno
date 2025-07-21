@@ -12,6 +12,6 @@ class EchoCommand(app_commands.Command):
         @is_admin()
         async def echo(interaction: discord.Interaction, message: str, attachment: discord.Attachment = None):            
             if attachment:
-                await interaction.followup.send(message, file=await attachment.to_file())
+                await interaction.channel.send(message, file=await attachment.to_file())
             else:
-                await interaction.followup.send(message)
+                await interaction.channel.send(message)
