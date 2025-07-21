@@ -5,6 +5,8 @@ from datetime import datetime, time, timezone
 import json
 import os
 from bot.services.ai.types import Message
+from bot.utils.decarators.admin_check import is_admin
+from bot.utils.decarators.command_logging import log_command_usage
 
 class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Cog
     def __init__(self, bot):
@@ -72,6 +74,8 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
     
     @app_commands.command(name="set_morning_channel", description="Set the morning message channel for this server")
     @app_commands.describe(channel="The channel where morning messages will be sent (defaults to current channel)")
+    @log_command_usage()
+    @is_admin()
     async def set_morning_channel(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         """Set the morning message channel for this guild"""
         if channel is None:
@@ -84,6 +88,8 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
         self.bot.logger.info(f"Set morning channel for {interaction.guild.name} to {channel.name}")
     
     @app_commands.command(name="remove_morning_channel", description="Remove morning messages for this server")
+    @log_command_usage()
+    @is_admin()
     async def remove_morning_channel(self, interaction: discord.Interaction):
         """Remove morning messages for this guild"""
         if interaction.guild.id in self.morning_channels:
@@ -93,6 +99,8 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
             await interaction.response.send_message("Morning messages are not configured for this server.")
     
     @app_commands.command(name="test_morning", description="Test the morning message functionality")
+    @log_command_usage()
+    @is_admin()
     async def test_morning_message(self, interaction: discord.Interaction):
         """Test the morning message functionality"""
         await interaction.response.defer()  # Defer since AI response might take time
