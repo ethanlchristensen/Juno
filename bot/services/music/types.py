@@ -46,6 +46,7 @@ class FilterPreset(Enum):
     CRYSTALIZE = ("crystalize", "Crystalize", "crystalizer=intensity=0.7:resonance=0.5")
     COMPRESSOR = ("compressor", "Compressor", "acompressor=threshold=0.089:ratio=9:attack=200:release=1000")
     EARWAX = ("earwax", "Earwax", "earwax")
+    REVERB = ("reverb", "Shimmering Reverb", "aecho=0.8:0.88:1000:0.6,aecho=0.8:0.9:1500:0.4,aecho=0.8:0.92:2000:0.3,volume=0.8")
     # HAAS = ("haas", "Haas Effect", "haas=level_in=1:level_out=1:side_gain=0.5:middle_source=mid:middle_phase=0")
     STEREOWIDE = ("stereowide", "Stereo Wide", "stereowiden=delay=20:feedback=0.3:crossfeed=0.3:drymix=0.8")
     PITCH_UP = ("pitch_up", "Pitch Up", "asetrate=48000*1.2,aresample=48000,atempo=0.833")

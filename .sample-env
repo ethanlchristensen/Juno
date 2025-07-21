@@ -27,3 +27,5 @@ MENTION_COOLDOWN=60
 COOLDOWN_BYPASS_IDS=[]
 
 PROMPTS_PATH="prompts.json"
+
+MORNING_CHANNEL_IDS={<guildid>:<channelid>}
