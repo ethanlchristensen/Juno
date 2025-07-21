@@ -196,7 +196,7 @@ class EmbedService:
         embed = discord.Embed(title=title, description=message, color=0xF1C40F)
         embed.set_footer(text="Have a great day!")
         embed.timestamp = datetime.now()
-        embed.set_thumbnail(url=f"attachment://{random.choice(os.listdir(os.path.join(os.getcwd(), "emojis")))}")
+        embed.set_thumbnail(url=f"attachment://{random.choice(os.listdir(os.path.join(os.getcwd(), 'emojis')))}")
         return embed
 
     @staticmethod
