@@ -120,6 +120,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
                 title="🌅 Good Morning!"
             )
             
+            await interaction.followup.send(content="Sending test morning message...", ephemeral=True)
             await interaction.channel.send(embed=embed)
             self.bot.logger.info(f"Sent test morning message to {interaction.channel.name} in {interaction.guild.name}")
             
