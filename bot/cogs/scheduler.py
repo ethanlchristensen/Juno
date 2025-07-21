@@ -57,9 +57,9 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
                 
                 response = await self.bot.ai_service.chat(messages=messages)
                 
-                embed = self.bot.embed_service.create_success_embed(
+                embed = self.bot.embed_service.create_morning_embed(
                     message=response.content,
-                    title="🌅 Good Morning!"
+                    img_link="https://imgur.com/gallery/thumbs-up-emoji-KGuX4Hc#J39rTdX"
                 )
                 
                 await channel.send(embed=embed)

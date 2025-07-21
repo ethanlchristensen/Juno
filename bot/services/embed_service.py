@@ -188,6 +188,15 @@ class EmbedService:
     ) -> discord.Embed:
         """Create an embed for displaying success messages"""
         return discord.Embed(title=title, description=message, color=0x2ECC71)
+    
+    def create_morning_embed(self, message: str, title: str = "🌅 Good Morning!", img_link: str | None = None) -> discord.Embed:
+        """Create an embed for morning messages"""
+        embed = discord.Embed(title=title, description=message, color=0xF1C40F)
+        if img_link:
+            embed.set_image(url=img_link)
+        embed.set_footer(text="Have a great day!")
+        embed.timestamp = datetime.now()
+        return embed
 
     @staticmethod
     def format_duration(seconds: int) -> str:
