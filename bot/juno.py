@@ -40,9 +40,13 @@ class Juno(commands.Bot):
         self.cooldown_bypass_ids = json.loads(os.getenv("COOLDOWN_BYPASS_IDS", "[]"))
         self.bot_id = int(os.getenv("BOT_ID", ""))
         if prompts_path := os.getenv("PROMPTS_PATH"):
-            with open(prompts_path, "r") as f:
-                self.prompts = json.load(f)
-                self.logger.info(f"Loaded {len(self.prompts)} prompts from prompts_path={prompts_path}")
+            try:
+                with open(os.path.join(os.getcwd(), prompts_path), "r") as f:
+                    self.prompts = json.load(f)
+                    self.logger.info(f"Loaded {len(self.prompts)} prompts from prompts_path={prompts_path}")
+            except Exception as e:
+                self.logger.error(f"Failed to load prompts from {prompts_path}: {e}")
+                self.prompts = {}
 
     async def setup_hook(self):
         self.juno_slash.load_commands()
