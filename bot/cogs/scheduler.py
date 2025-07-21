@@ -152,8 +152,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
             response = await self.bot.ai_service.chat(messages=messages)
 
             embed = self.bot.embed_service.create_morning_embed(
-                message=response.content,
-                img_link="https://i.imgur.com/J39rTdX.png",
+                message=response.content
             )
 
             await interaction.followup.send(
