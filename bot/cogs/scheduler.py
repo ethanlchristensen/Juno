@@ -102,9 +102,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
     @log_command_usage()
     @is_admin()
     async def test_morning_message(self, interaction: discord.Interaction):
-        """Test the morning message functionality"""
-        await interaction.response.defer()  # Defer since AI response might take time
-        
+        """Test the morning message functionality"""        
         try:
             # Generate motivational message
             messages = [
