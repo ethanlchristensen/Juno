@@ -114,7 +114,6 @@ class Juno(commands.Bot):
         self.user_cooldowns[message.author.id] = time.time()
         username = self.ids_to_users.get(str(message.author.id), message.author.name)
         self.logger.info(f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}")
-        
         # Process and respond
         async with message.channel.typing():
             messages = await self._build_message_context(message, reference_message, username)

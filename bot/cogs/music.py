@@ -44,7 +44,7 @@ class MusicCog(commands.Cog):
         name="join", description="Have Juno join the VC you are currently in."
     )
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def join(self, interaction: discord.Interaction):
         channel = interaction.user.voice.channel
         vc = await channel.connect(self_deaf=True)
@@ -58,7 +58,7 @@ class MusicCog(commands.Cog):
     )
     @app_commands.autocomplete(filter=filter_autocomplete)
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def play(
         self, interaction: discord.Interaction, query: str, filter: Optional[str]
     ):
@@ -106,7 +106,7 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="skip", description="Skip actively playing audio.")
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def skip(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 
@@ -121,7 +121,7 @@ class MusicCog(commands.Cog):
         name="pause", description="Pause the currently playing audio."
     )
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def pause(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 
@@ -136,7 +136,7 @@ class MusicCog(commands.Cog):
         name="resume", description="Resume audio that was previously paused."
     )
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def resume(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 
@@ -151,7 +151,7 @@ class MusicCog(commands.Cog):
         name="leave", description="Have Juno leave the voice channel."
     )
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def leave(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
         if player.voice_client:
@@ -165,7 +165,7 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="queue", description="View the current music queue.")
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def queue(self, interaction: discord.Interaction):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 
@@ -188,7 +188,7 @@ class MusicCog(commands.Cog):
     )
     @app_commands.autocomplete(new_filter=filter_autocomplete)
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def filter(
         self,
         interaction: discord.Interaction,
@@ -216,7 +216,7 @@ class MusicCog(commands.Cog):
         seconds="Seconds (optional)"
     )
     @log_command_usage()
-    @require_voice_channel(ephemeral=True)
+    @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def seek(
         self,
         interaction: discord.Interaction,

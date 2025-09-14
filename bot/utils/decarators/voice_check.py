@@ -1,3 +1,5 @@
+import os
+import ast
 import functools
 import discord
 from discord import app_commands
@@ -7,7 +9,8 @@ P = ParamSpec('P')
 T = TypeVar('T')
 
 def require_voice_channel(
-    ephemeral: bool = True
+    ephemeral: bool = True,
+    allow_admin_bypass: bool = False
 ) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
     A decorator that checks if the user is in a voice channel before executing the command.
@@ -25,6 +28,14 @@ def require_voice_channel(
             if not interaction:
                 # If there's no interaction, just call the original function
                 return await func(*args, **kwargs)
+        
+            # Check if admin bypass is enabled and user is an admin
+            if allow_admin_bypass:
+                admins_str = os.getenv("ADMINS", "[]")
+                admins = ast.literal_eval(admins_str)
+                if str(interaction.user.id) in admins:
+                    # Admin bypass - proceed with the command
+                    return await func(*args, **kwargs)
             
             # Check if the user is in a voice channel
             if not interaction.user.voice:
