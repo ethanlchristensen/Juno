@@ -1,5 +1,5 @@
 import os
-import ast
+import json
 import functools
 import discord
 from discord import app_commands
@@ -31,9 +31,9 @@ def require_voice_channel(
         
             # Check if admin bypass is enabled and user is an admin
             if allow_admin_bypass:
-                admins_str = os.getenv("ADMINS", "[]")
-                admins = ast.literal_eval(admins_str)
-                if str(interaction.user.id) in admins:
+                admin_list_str = os.getenv("ADMINS", "[]")
+                admin_list = json.loads(admin_list_str)
+                if interaction.user.id in admin_list:
                     # Admin bypass - proceed with the command
                     return await func(*args, **kwargs)
             
