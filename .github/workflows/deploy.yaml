@@ -1,0 +1,44 @@
+name: Deploy to Pi (Self-Hosted)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    # Target your self-hosted runner by its labels
+    runs-on: [self-hosted, linux, arm64, raspberry-pi]
+
+    steps:
+      - name: Verify Current Directory
+        run: |
+          echo "Ensuring we are in the correct directory:"
+          pwd
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # This checks out the code into the runner's workspace on the Pi
+
+      - name: Checkout Secrets
+        run: cp /home/ethan/source/repos/Juno/production.env ./.env
+
+      # Optional: If your .env file is stored securely elsewhere on the Pi
+      # and needs to be copied into the checked-out directory:
+      # - name: Copy .env file
+      #   run: cp /path/to/secure/location/.env ./.env
+      #   # Ensure the source path is correct and the .env file exists there.
+      #   # The destination './.env' is relative to the checked-out code.
+
+      - name: Deploy with Docker Compose
+        # Assumes docker-compose.yml is in the root of your repository
+        # The working directory for this step will be the root of your checked-out code
+        run: |
+          echo "Stopping existing services (if any)..."
+          ls
+          ls -la
+          docker compose down --remove-orphans
+          echo "Building and starting new services..."
+          docker compose up -d --build --remove-orphans
+          echo "Cleaning up old Docker images..."
+          docker image prune -af # Remove dangling images
