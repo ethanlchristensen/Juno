@@ -24,6 +24,8 @@ jobs:
         run: cp /home/ethan/source/repos/Juno/development.env ./development.env
       - name: Checkout Secrets Prod
         run: cp /home/ethan/source/repos/Juno/production.env ./production.env
+      - name: Checkout Prompts
+        run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
 
       # Optional: If your .env file is stored securely elsewhere on the Pi
       # and needs to be copied into the checked-out directory:
