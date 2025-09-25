@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     # Target your self-hosted runner by its labels
-    runs-on: [self-hosted, linux, arm64, raspberry-pi]
+    runs-on: [self-hosted, linux, arm64, EPIC]
 
     steps:
       - name: Verify Current Directory
