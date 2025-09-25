@@ -39,8 +39,8 @@ jobs:
           echo "Stopping existing services (if any)..."
           ls
           ls -la
-          docker compose down --remove-orphans
+          sudo docker compose down --remove-orphans
           echo "Building and starting new services..."
-          docker compose up -d --build --remove-orphans juno-prod
+          sudo docker compose up -d --build --remove-orphans juno-prod
           echo "Cleaning up old Docker images..."
-          docker image prune -af # Remove dangling images
+          sudo docker image prune -af # Remove dangling images
