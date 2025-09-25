@@ -29,9 +29,6 @@ class JunoSlash:
         # Use the utility function to load commands with visual feedback
         settings.load_components(command_files, load_command, "command")
 
-        await self.tree.sync()
-        logger.info("✅ All commands loaded and synced.")
-
     def get_next_command(self):
         for file in os.listdir(self.path):
             if file.endswith(".py") and file not in ["__pycache__", "__init__.py"]:
