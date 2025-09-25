@@ -107,9 +107,11 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
         # Update the in-memory dictionary
         self.morning_channels[interaction.guild.id] = channel.id
 
-        await interaction.response.send_message(
-            f"Morning messages will be sent to {channel.mention}"
+        await interaction.followup.send(
+            content=f"Morning messages will be sent to {channel.mention}",
+            ephemeral=True,
         )
+        
         self.bot.logger.info(
             f"Set morning channel for {interaction.guild.name} to {channel.name}"
         )
@@ -124,12 +126,13 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
         """Remove morning messages for this guild"""
         if interaction.guild.id in self.morning_channels:
             del self.morning_channels[interaction.guild.id]
-            await interaction.response.send_message(
-                "Morning messages disabled for this server."
+            await interaction.followup.send(
+                content="Morning messages disabled for this server.", ephemeral=True
             )
         else:
-            await interaction.response.send_message(
-                "Morning messages are not configured for this server."
+            await interaction.followup.send(
+                content="Morning messages are not configured for this server.",
+                ephemeral=True,
             )
 
     @app_commands.command(
