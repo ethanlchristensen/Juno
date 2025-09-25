@@ -9,6 +9,7 @@ class JunoSlash:
     def __init__(self, tree: app_commands.CommandTree):
         self.path = os.path.join(os.getcwd(), "bot", "commands")
         self.tree = tree
+        tree.sync()
 
     def load_commands(self, args=None):
         logger.info(f"📁 Looking for commangs in: {self.path}")
