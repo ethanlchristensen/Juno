@@ -20,10 +20,10 @@ jobs:
         uses: actions/checkout@v4
         # This checks out the code into the runner's workspace on the Pi
 
-      - name: Checkout Secrets
-        run:
-            cp /home/ethan/source/repos/Juno/production.env ./production.env
-            cp /home/ethan/source/repos/Juno/development.env ./development.env
+      - name: Checkout Secrets Dev
+        run: cp /home/ethan/source/repos/Juno/development.env ./development.env
+      - name: Checkout Secrets Prod
+        run: cp /home/ethan/source/repos/Juno/production.env ./production.env
 
       # Optional: If your .env file is stored securely elsewhere on the Pi
       # and needs to be copied into the checked-out directory:
