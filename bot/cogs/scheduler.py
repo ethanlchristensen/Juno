@@ -32,7 +32,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
     def cog_unload(self):
         self.morning_message.cancel()
 
-    @tasks.loop(time=time(13, 0, tzinfo=timezone.utc))
+    @tasks.loop(time=time(12, 0, tzinfo=timezone.utc))
     async def morning_message(self):
         """Send motivational morning messages to all configured channels"""
         if not self.morning_channels:
@@ -111,7 +111,7 @@ class SchedulerCog(commands.Cog):  # Should be commands.Cog, not app_commands.Co
             content=f"Morning messages will be sent to {channel.mention}",
             ephemeral=True,
         )
-        
+
         self.bot.logger.info(
             f"Set morning channel for {interaction.guild.name} to {channel.name}"
         )
