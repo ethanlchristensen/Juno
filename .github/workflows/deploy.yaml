@@ -21,7 +21,7 @@ jobs:
         # This checks out the code into the runner's workspace on the Pi
 
       - name: Checkout Secrets
-        run: cp /home/ethan/source/repos/Juno/production.env ./.env
+        run: cp /home/ethan/source/repos/Juno/production.env ./production.env
 
       # Optional: If your .env file is stored securely elsewhere on the Pi
       # and needs to be copied into the checked-out directory:
@@ -39,6 +39,6 @@ jobs:
           ls -la
           docker compose down --remove-orphans
           echo "Building and starting new services..."
-          docker compose up -d --build --remove-orphans
+          docker compose up -d --build --remove-orphans juno-prod
           echo "Cleaning up old Docker images..."
           docker image prune -af # Remove dangling images
