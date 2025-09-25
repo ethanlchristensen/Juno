@@ -49,7 +49,7 @@ class Juno(commands.Bot):
                 self.prompts = {}
 
     async def setup_hook(self):
-        self.juno_slash.load_commands()
+        await self.juno_slash.load_commands()
         await self.load_cogs()
 
     async def load_cogs(self):
