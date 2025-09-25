@@ -5,10 +5,13 @@ import logging
 from functools import wraps
 from typing import Callable, TypeVar, ParamSpec, Awaitable, cast
 
+from juno import EmbedService
+
 P = ParamSpec('P')
 T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
+embed_service = EmbedService()
 
 def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
@@ -34,10 +37,7 @@ def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]
                     return await func(*args, **kwargs)
                 else:
                     logger.warning(f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command.")
-                    embed = discord.Embed()
-                    embed.color = 0xFF0000
-                    embed.title = "Permission Denied"
-                    embed.description = "You don't have permission to use this command."
+                    embed = embed_service.create_error_embed(error_message="You don't have permission to use this command.")
                     await interaction.followup.send(embed=embed, ephemeral=True)
                     return cast(T, None)
             except json.JSONDecodeError:
