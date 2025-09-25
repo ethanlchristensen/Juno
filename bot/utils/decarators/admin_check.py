@@ -5,7 +5,7 @@ import logging
 from functools import wraps
 from typing import Callable, TypeVar, ParamSpec, Awaitable, cast
 
-from juno import EmbedService
+from bot.services.embed_service import EmbedService
 
 P = ParamSpec('P')
 T = TypeVar('T')
