@@ -1,5 +1,7 @@
 from .ai.ai_service_factory import AiServiceFactory
-from .ai.types import AIChatResponse, Message
+from .ai.ai_orchestrator import AiOrchestrator
+from .ai.types import AIChatResponse, Message, UserIntent, ImageGenerationResponse
+from .ai.image_generation_service import ImageGenerationService
 
 from .music.music_queue_service import MusicPlayer, MusicQueueService
 from .music.audio_service import AudioService
@@ -18,5 +20,9 @@ __all__ = [
     "EmbedService",
     "AudioSource",
     "FilterPreset",
-    "QueuePaginationView"
+    "QueuePaginationView",
+    "AiOrchestrator",
+    "UserIntent",
+    "ImageGenerationService",
+    "ImageGenerationResponse"
 ]

@@ -10,7 +10,7 @@ class JunoSlash:
         self.path = os.path.join(os.getcwd(), "bot", "commands")
         self.tree = tree
 
-    def load_commands(self, args=None):
+    async def load_commands(self, args=None):
         logger.info(f"📁 Looking for commangs in: {self.path}")
         command_files = [f[:-3] for f in os.listdir(self.path) 
                        if f.endswith('.py') and f not in ["__pycache__", "__init__.py"]]

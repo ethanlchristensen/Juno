@@ -11,23 +11,15 @@ from collections import defaultdict
 from discord.ext import commands
 
 from bot.utils import JunoSlash
-from bot.services import AiServiceFactory, EmbedService, AudioService, MusicQueueService, AIChatResponse, Message
+from bot.services import AiServiceFactory, AiOrchestrator, ImageGenerationService, EmbedService, AudioService, MusicQueueService, Message
 
 class Juno(commands.Bot):
     def __init__(self, intents):
-        status = (
-            discord.Status.invisible
-            if bool(int(os.getenv("INVISIBLE")))
-            else discord.Status.online
-        )
-        super().__init__(
-            command_prefix="!", intents=intents, status=status, activity=None
-        )
+        status = (discord.Status.invisible if bool(int(os.getenv("INVISIBLE"))) else discord.Status.online)
+        super().__init__(command_prefix="!", intents=intents, status=status, activity=None)
         self.start_time = time.time()
         self.juno_slash = JunoSlash(self.tree)
-        self.ai_service = AiServiceFactory.get_service(
-            provider=os.getenv("PREFERRED_PROVIDER", "openai")
-        )
+        self.ai_service = AiServiceFactory.get_service(provider=os.getenv("PREFERRED_PROVIDER", "openai"))
         self.embed_service = EmbedService()
         self.audio_service = AudioService()
         self.music_queue_service = MusicQueueService(self)
@@ -38,7 +30,10 @@ class Juno(commands.Bot):
         self.user_cooldowns = defaultdict(float)
         self.cooldown_duration = int(os.getenv("MENTION_COOLDOWN", "60"))
         self.cooldown_bypass_ids = json.loads(os.getenv("COOLDOWN_BYPASS_IDS", "[]"))
-        self.bot_id = int(os.getenv("BOT_ID", ""))
+        # self.bot_id = int(os.getenv("BOT_ID", ""))
+        self.bot_id = "1188732299399942174"
+        self.ai_orchestrator = AiOrchestrator()
+        self.image_generation_service = ImageGenerationService()
         if prompts_path := os.getenv("PROMPTS_PATH"):
             try:
                 with open(os.path.join(os.getcwd(), prompts_path), "r") as f:
@@ -49,7 +44,7 @@ class Juno(commands.Bot):
                 self.prompts = {}
 
     async def setup_hook(self):
-        self.juno_slash.load_commands()
+        await self.juno_slash.load_commands()
         await self.load_cogs()
 
     async def load_cogs(self):
@@ -116,9 +111,34 @@ class Juno(commands.Bot):
         self.logger.info(f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}")
         # Process and respond
         async with message.channel.typing():
-            messages = await self._build_message_context(message, reference_message, username)
-            response = await self.ai_service.chat(messages=messages)
-            await self._send_response(message, response.content)
+            # Determine the intent
+            user_intent = await self.ai_orchestrator.detect_intent(user_message=message.content)
+
+            if user_intent.intent == "chat":
+                self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
+                messages = await self._build_message_context(message, reference_message, username)
+                response = await self.ai_service.chat(messages=messages)
+                await self._send_response(message, response.content)
+            elif user_intent.intent == "image_generation":
+                # Check if the message has an IMAGE attachment
+                image_attachment = next(
+                    (att for att in message.attachments if att.content_type and att.content_type.startswith('image/')),
+                    None
+                )
+
+                if image_attachment:
+                    self.logger.info(f"Found image attachment: {image_attachment.filename}")
+                    image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
+                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
+                    image_file = discord.File(image_bytes, filename="edited_image.png")
+                    await self._send_response(message, image_generation_response.text_response, image_file)
+                else:
+                    self.logger.info("No image attachment found, generating image with user prompt.")
+                    image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
+                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
+                    image_file = discord.File(image_bytes, filename="generated_image.png")
+                    await self._send_response(message, image_generation_response.text_response, image_file)
+
 
     async def _get_reference_message(self, message: discord.Message):
         """Get the referenced message if this is a reply."""
@@ -222,17 +242,21 @@ class Juno(commands.Bot):
         
         return chunks
 
-    async def _send_response(self, message: discord.Message, content: str):
+    async def _send_response(self, message: discord.Message, content: str, image_file: discord.File = None):
         """Send the AI response, splitting if necessary."""
         processed_content = self._process_mentions_in_response(content)
         chunks = self._split_long_message(processed_content)
-        
-        for idx, chunk in enumerate(chunks):
-            if idx == 0:
-                await message.reply(chunk)
-            else:
-                await message.channel.send("...")
-                await message.channel.send(chunk)
+
+        if image_file:
+            await message.reply(content=content, file=image_file)
+        else:
+            for idx, chunk in enumerate(chunks):
+                if idx == 0:
+                    await message.reply(chunk)
+                else:
+                    await message.channel.send("...")
+                    await message.channel.send(chunk)
+    
 
     def replace_mentions(self, text):
         mention = f"<@{self.bot_id}>"

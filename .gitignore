@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 prompts.json
 *.encrypted
+morning_channels.json

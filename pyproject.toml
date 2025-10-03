@@ -5,6 +5,7 @@ description = "Discord Bot"
 authors = ["ethanlchristensen <ethanlchristensen@outlook.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.14"
@@ -17,6 +18,7 @@ pynacl = "^1.5.0"
 rich = "^14.0.0"
 google-genai = "^1.20.0"
 cryptography = "^45.0.4"
+<<<<<<< HEAD
 discord-ext-voice-recv = "^0.5.2a179"
 llvmlite = "^0.44.0"
 numba = "^0.61.2"
@@ -25,6 +27,11 @@ elevenlabs = "^2.4.0"
 #torch = "^2.8.0"
 #torchvision = "^0.23.0"
 #torchaudio = "^2.8.0"
+=======
+elevenlabs = "^2.4.0"
+pytz = "^2025.2"
+pillow = "^11.3.0"
+>>>>>>> 5effc5fec78cebac472ca2bab244462faea290a4
 
 [build-system]
 requires = ["poetry-core"]
@@ -35,4 +42,3 @@ build-backend = "poetry.core.masonry.api"
 name = "pytorch-gpu"
 url = "https://download.pytorch.org/whl/cu126"
 priority = "explicit"
-
