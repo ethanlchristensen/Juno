@@ -124,7 +124,8 @@ class Juno(commands.Bot):
 
     def _should_respond_to_message(self, message: discord.Message, reference_message):
         """Check if the bot should respond to this message."""
-        bot_string = f"<@{self.bot_id}>"
+        # bot_string = f"<@{self.bot_id}>"
+        bot_string = "<@1327484396495831101>"
         return (bot_string in message.content or 
                 (reference_message and reference_message.author.id == self.bot_id))
 
@@ -227,7 +228,8 @@ class Juno(commands.Bot):
                 await message.channel.send(chunk)
 
     def replace_mentions(self, text):
-        mention = f"<@{self.bot_id}>"
+        # mention = f"<@{self.bot_id}>"
+        mention = "<@1327484396495831101>"
         parts = text.split(mention)
         if len(parts) <= 1:
             return text
