@@ -12,7 +12,7 @@ discord-py = {git = "https://github.com/rapptz/discord.py.git"}
 python-dotenv = "^1.1.0"
 openai = ">=1.90.0,<2.0.0"
 ollama = "^0.4.7"
-yt-dlp = "^2025.3.27"
+yt-dlp = "^2025.9.23"
 pynacl = "^1.5.0"
 rich = "^14.0.0"
 google-genai = "^1.20.0"
@@ -20,11 +20,11 @@ cryptography = "^45.0.4"
 discord-ext-voice-recv = "^0.5.2a179"
 llvmlite = "^0.44.0"
 numba = "^0.61.2"
-openai-whisper = "^20240930"
+#openai-whisper = "^20240930"
 elevenlabs = "^2.4.0"
-torch = {version = "^2.8.0", source = "pytorch-gpu"}
-torchvision = {version = "^0.23.0", source = "pytorch-gpu"}
-torchaudio = {version = "^2.8.0", source = "pytorch-gpu"}
+#torch = "^2.8.0"
+#torchvision = "^0.23.0"
+#torchaudio = "^2.8.0"
 
 [build-system]
 requires = ["poetry-core"]
