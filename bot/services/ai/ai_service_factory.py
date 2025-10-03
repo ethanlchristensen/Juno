@@ -7,7 +7,6 @@ from .ollama_service import OllamaService
 from .openai_service import OpenAIService
 from .google_service import GoogleAIService
 
-
 class AiServiceFactory:
     @staticmethod
     def get_service(provider: str) -> BaseService:

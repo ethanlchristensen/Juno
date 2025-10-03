@@ -1,6 +1,7 @@
 import os
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Type, TypeVar, Optional
+from pydantic import BaseModel
 
 from google import genai
 from google.genai import types
@@ -8,6 +9,8 @@ from google.genai import Client
 
 from .base_service import BaseService
 from .types import Message, AIChatResponse, AIServiceConfig
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class GoogleAIService(BaseService):
@@ -75,3 +78,34 @@ class GoogleAIService(BaseService):
                 raw_response=None,
                 usage={}
             )
+
+    async def chat_with_schema(
+        self, messages: List[Message], schema: Type[T], model: Optional[str] = None
+    ) -> T:
+        if not self.client:
+            raise ValueError("GoogleAI Service is not initialized. Please set the GEMINI_API_KEY.")
+
+        try:
+            model_to_use = model or self.default_model
+
+            gemini_messages = [
+                self.map_message_to_provider(message, "google") for message in messages
+            ]
+            
+            self.logger.info(
+                f"Calling GoogleAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}"
+            )
+
+            raw_response = self.client.models.generate_content(
+                model=model_to_use,
+                contents=gemini_messages,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": schema,
+                }
+            )
+
+            return raw_response.parsed
+        except Exception as e:
+            self.logger.error(f"Error in GoogleAIService.chat_with_schema(): {e}")
+            raise

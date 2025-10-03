@@ -1,11 +1,15 @@
 import os
 import openai
 import logging
-from typing import List, Optional, Any
+from typing import List, Optional, Any, TypeVar, Optional, Type
+from pydantic import BaseModel
+
 
 from .base_service import BaseService
 from .types import Message, AIChatResponse, AIServiceConfig
 
+
+T = TypeVar('T', bound=BaseModel)
 
 class OpenAIService(BaseService):
     def __init__(self, config: Optional[AIServiceConfig] = None):
@@ -51,3 +55,29 @@ class OpenAIService(BaseService):
         except Exception as e:
             self.logger.error(f"Error in OpenAIService.chat(): {e}")
             return {}
+
+
+    async def chat_with_schema(
+        self, messages: List[Message], schema: Type[T], model: Optional[str] = None
+    ) -> T:
+        try:
+            model_to_use = model or self.default_model
+
+            openai_messages = [
+                self.map_message_to_provider(message, "openai") for message in messages
+            ]
+
+            self.logger.info(
+                f"Calling OpenAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}"
+            )
+
+            raw_response = self.client.beta.chat.completions.parse(
+                model=model_to_use,
+                messages=openai_messages,
+                response_format=schema,
+            )
+            
+            return raw_response.choices[0].message.parsed
+        except Exception as e:
+            self.logger.error(f"Error in OpenAIService.chat_with_schema(): {e}")
+            raise

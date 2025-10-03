@@ -1,6 +1,8 @@
+from pydantic import BaseModel, Field
 from typing import Dict, List, Union, Literal, Optional, Any, ClassVar
 from dataclasses import dataclass, asdict, field
 from enum import Enum
+from PIL.Image import Image as PILImage
 
 
 class Role(str, Enum):
@@ -57,3 +59,20 @@ class AIServiceConfig:
     host: Optional[str] = None
     api_key: Optional[str] = None
     model: Optional[str] = None
+
+
+
+class UserIntent(BaseModel):
+    """Structured output for user intent classification"""
+    intent: Literal["chat", "image_generation"] = Field(
+        description="The user's intent: chat for conversation or image_generation for creating images"
+    )
+    
+    reasoning: str = Field(
+        description="Brief explanation of why this intent was chosen"
+    )
+
+@dataclass
+class ImageGenerationResponse:
+    text_response: str = "Here is your generated image"
+    generated_image: PILImage | None = None
