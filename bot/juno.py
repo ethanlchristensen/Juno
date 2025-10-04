@@ -40,6 +40,7 @@ class Juno(commands.Bot):
         self.cooldown_bypass_ids = config.cooldownBypassList
         self.ai_orchestrator = AiOrchestrator(config=config)
         self.image_generation_service = ImageGenerationService(config=config)
+        self.config = config
         self.logger = logging.getLogger(__name__)
 
         try:

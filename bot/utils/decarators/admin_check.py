@@ -1,14 +1,12 @@
-import json
 import logging
-import os
 from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar, cast
 
 import discord
 
-from bot.services.embed_service import EmbedService
 from bot.services.config_service import Config
+from bot.services.embed_service import EmbedService
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -17,7 +15,7 @@ logger = logging.getLogger(__name__)
 embed_service = EmbedService()
 
 
-def is_admin(config: Config) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
     Decorator that checks if the user is in the ADMINS list from environment variables.
     """
@@ -36,6 +34,8 @@ def is_admin(config: Config) -> Callable[[Callable[P, Awaitable[T]]], Callable[P
                 return await func(*args, **kwargs)
 
             await interaction.response.defer(ephemeral=True)
+
+            config: Config = interaction.client.config
 
             if interaction.user.id in config.adminIds:
                 return await func(*args, **kwargs)

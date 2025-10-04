@@ -13,7 +13,7 @@ from bot.utils.decarators.command_logging import log_command_usage
 
 
 class SchedulerCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client):
         self.bot = bot
         self.morning_configs = self._load_morning_configs()
         self.check.start()
