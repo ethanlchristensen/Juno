@@ -1,12 +1,8 @@
-import base64
 import json
 import logging
 import os
-import re
 import time
-from collections import defaultdict
 
-import aiohttp
 import discord
 from discord.ext import commands
 
@@ -15,10 +11,12 @@ from bot.services import (
     AiServiceFactory,
     AudioService,
     Config,
+    CooldownService,
     EmbedService,
     ImageGenerationService,
-    Message,
+    MessageService,
     MusicQueueService,
+    ResponseService,
 )
 from bot.utils import JunoSlash
 
@@ -29,27 +27,35 @@ class Juno(commands.Bot):
         super().__init__(command_prefix="!", intents=intents, status=status, activity=None)
         self.start_time = time.time()
         self.juno_slash = JunoSlash(self.tree)
+        self.config = config
+        self.logger = logging.getLogger(__name__)
+
+        # Load prompts
+        self.prompts = self._load_prompts(config.promptsPath)
+
+        # Initialize services
         self.ai_service = AiServiceFactory.get_service(provider=config.aiConfig.preferredAiProvider, config=config)
         self.embed_service = EmbedService()
         self.audio_service = AudioService()
         self.music_queue_service = MusicQueueService(self)
-        self.names_to_ats = config.usersToId
-        self.ids_to_users = config.idToUsers
-        self.user_cooldowns = defaultdict(float)
-        self.cooldown_duration = config.mentionCooldown
-        self.cooldown_bypass_ids = config.cooldownBypassList
         self.ai_orchestrator = AiOrchestrator(config=config)
         self.image_generation_service = ImageGenerationService(config=config)
-        self.config = config
-        self.logger = logging.getLogger(__name__)
 
+        # New extracted services
+        self.message_service = MessageService(self, self.prompts, config.idToUsers)
+        self.response_service = ResponseService(config.usersToId)
+        self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
+
+    def _load_prompts(self, prompts_path: str) -> dict:
+        """Load prompts from JSON file."""
         try:
-            with open(os.path.join(os.getcwd(), config.promptsPath)) as f:
-                self.prompts = json.load(f)
-                self.logger.info(f"Loaded {len(self.prompts)} prompts from prompts_path={config.promptsPath}")
+            with open(os.path.join(os.getcwd(), prompts_path)) as f:
+                prompts = json.load(f)
+                self.logger.info(f"Loaded {len(prompts)} prompts from prompts_path={prompts_path}")
+                return prompts
         except Exception as e:
-            self.logger.error(f"Failed to load prompts from {config.promptsPath}: {e}")
-            self.prompts = {}
+            self.logger.error(f"Failed to load prompts from {prompts_path}: {e}")
+            return {}
 
     async def setup_hook(self):
         await self.juno_slash.load_commands()
@@ -99,193 +105,57 @@ class Juno(commands.Bot):
             return
 
         # Check if bot is mentioned or message is a reply to the bot
-        reference_message = await self._get_reference_message(message)
-        if not self._should_respond_to_message(message, reference_message):
+        reference_message = await self.message_service.get_reference_message(message)
+        if not self.message_service.should_respond_to_message(message, reference_message):
             return
 
         # Apply cooldown check
-        if not self._check_cooldown(message.author.id, message.author.name):
+        if not self.cooldown_service.check_cooldown(message.author.id, message.author.name):
             return
 
         # Update cooldown and log interaction
-        self.user_cooldowns[message.author.id] = time.time()
-        username = self.ids_to_users.get(str(message.author.id), message.author.name)
+        self.cooldown_service.update_cooldown(message.author.id)
+        username = self.config.idToUsers.get(str(message.author.id), message.author.name)
         self.logger.info(f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}")
+
         # Process and respond
         async with message.channel.typing():
-            # Determine the intent
-            is_replying_to_bot_image = False
-            if reference_message and reference_message.author.id == self.user.id:
-                has_image = any(att.content_type and att.content_type.startswith("image/") for att in reference_message.attachments)
-                is_replying_to_bot_image = has_image
+            await self._handle_message_intent(message, reference_message, username)
 
-            user_intent = await self.ai_orchestrator.detect_intent(
-                user_message=message.content,
-                is_replying_to_bot_image=is_replying_to_bot_image,
-            )
+    async def _handle_message_intent(self, message: discord.Message, reference_message: discord.Message, username: str):
+        """Handle the user's message based on detected intent."""
+        # Determine if replying to bot's image for intent detection
+        is_replying_to_bot_image = self.message_service.is_replying_to_bot_image(reference_message)
 
-            if user_intent.intent == "chat":
-                self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
-                messages = await self._build_message_context(message, reference_message, username)
-                response = await self.ai_service.chat(messages=messages)
-                await self._send_response(message, response.content)
-            elif user_intent.intent == "image_generation":
-                # Check if the message has an IMAGE attachment
-                image_attachment = next(
-                    (att for att in message.attachments if att.content_type and att.content_type.startswith("image/")),
-                    None,
-                )
+        user_intent = await self.ai_orchestrator.detect_intent(
+            user_message=message.content,
+            is_replying_to_bot_image=is_replying_to_bot_image,
+        )
 
-                # If no attachment, check if replying to a bot message with an image
-                if not image_attachment and reference_message and reference_message.author.id == self.user.id:
-                    image_attachment = next(
-                        (att for att in reference_message.attachments if att.content_type and att.content_type.startswith("image/")),
-                        None,
-                    )
-                    if image_attachment:
-                        self.logger.info(f"Found image in referenced bot message: {image_attachment.filename}")
+        if user_intent.intent == "chat":
+            await self._handle_chat_intent(message, reference_message, username, user_intent)
+        elif user_intent.intent == "image_generation":
+            await self._handle_image_generation_intent(message, reference_message)
 
-                if image_attachment:
-                    self.logger.info(f"Editing image: {image_attachment.filename}")
-                    image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
-                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
-                    image_file = discord.File(image_bytes, filename="edited_image.png")
-                    await self._send_response(message, image_generation_response.text_response, image_file)
-                else:
-                    self.logger.info("No image attachment found, generating image with user prompt.")
-                    image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
-                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
-                    image_file = discord.File(image_bytes, filename="generated_image.png")
-                    await self._send_response(message, image_generation_response.text_response, image_file)
+    async def _handle_chat_intent(self, message, reference_message, username, user_intent):
+        """Handle chat intent."""
+        self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
+        messages = await self.message_service.build_message_context(message, reference_message, username)
+        response = await self.ai_service.chat(messages=messages)
+        await self.response_service.send_response(message, response.content)
 
-    async def _get_reference_message(self, message: discord.Message):
-        """Get the referenced message if this is a reply."""
-        if not message.reference:
-            return None
+    async def _handle_image_generation_intent(self, message, reference_message):
+        """Handle image generation intent."""
+        image_attachment = self.message_service.get_image_attachment(message, reference_message)
 
-        try:
-            return await message.channel.fetch_message(message.reference.message_id)
-        except discord.NotFound:
-            return None
-
-    def _should_respond_to_message(self, message: discord.Message, reference_message):
-        """Check if the bot should respond to this message."""
-        if not self.user:
-            return False
-
-        bot_string = f"<@{self.user.id}>"
-        should_respond = bot_string in message.content or (reference_message and reference_message.author.id == self.user.id)
-        return should_respond
-
-    def _check_cooldown(self, user_id: int, username: str) -> bool:
-        """Check if user is on cooldown. Returns True if can proceed."""
-        if user_id in self.cooldown_bypass_ids:
-            return True
-
-        current_time = time.time()
-        last_interaction = self.user_cooldowns[user_id]
-        time_since_last = current_time - last_interaction
-
-        if time_since_last < self.cooldown_duration:
-            remaining_time = int(self.cooldown_duration - time_since_last)
-            self.logger.info(f"⏰ Slow down! {username} is on cooldown for {remaining_time} seconds.")
-            return False
-
-        return True
-
-    async def _process_message_images(self, message: discord.Message) -> list:
-        """Process and encode image attachments."""
-        images = []
-        for attachment in message.attachments:
-            if attachment.content_type and attachment.content_type.startswith("image/"):
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(attachment.url) as resp:
-                            if resp.status == 200:
-                                img_bytes = await resp.read()
-                                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                                images.append({"type": attachment.content_type, "data": img_b64})
-                except Exception as e:
-                    self.logger.error(f"Failed to process image attachment: {e}")
-        return images
-
-    async def _build_message_context(self, message: discord.Message, reference_message, username: str) -> list:
-        """Build the message context for AI processing."""
-        images = await self._process_message_images(message)
-
-        messages = []
-
-        # Add system prompt if available
-        if main_prompt := self.prompts.get("main"):
-            messages.append(Message(role="system", content=main_prompt))
-
-        # Add reference message context if replying
-        if reference_message:
-            ref_username = self.ids_to_users.get(str(reference_message.author.id), reference_message.author.name)
-            ref_content = self.replace_mentions(reference_message.content).strip()
-            messages.append(Message(role="user", content=f"{ref_username} said:\n\n{ref_content}"))
-
-        # Add current message
-        current_content = f"{username} says:\n\n" + self.replace_mentions(message.content).strip()
-        messages.append(Message(role="user", content=current_content, images=images))
-
-        return messages
-
-    def _process_mentions_in_response(self, content: str) -> str:
-        """Replace name mentions with Discord user IDs."""
-        for name, user_id in self.names_to_ats.items():
-            pattern = re.compile(re.escape(name), re.IGNORECASE)
-            content = pattern.sub(f"{user_id}", content)
-        return content
-
-    def _split_long_message(self, content: str) -> list:
-        """Split messages longer than 2000 characters."""
-        if len(content) <= 2000:
-            return [content]
-
-        chunks = []
-        while len(content) > 2000:
-            chunk = content[:2000]
-            last_space = chunk.rfind(" ")
-
-            if last_space != -1:
-                chunks.append(content[:last_space])
-                content = content[last_space + 1 :]
-            else:
-                chunks.append(content[:2000])
-                content = content[2000:]
-
-        if content:
-            chunks.append(content)
-
-        return chunks
-
-    async def _send_response(self, message: discord.Message, content: str, image_file: discord.File = None):
-        """Send the AI response, splitting if necessary."""
-        processed_content = self._process_mentions_in_response(content)
-        chunks = self._split_long_message(processed_content)
-
-        if image_file:
-            await message.reply(content=content, file=image_file)
+        if image_attachment:
+            self.logger.info(f"Editing image: {image_attachment.filename}")
+            image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
         else:
-            for idx, chunk in enumerate(chunks):
-                if idx == 0:
-                    await message.reply(chunk)
-                else:
-                    await message.channel.send("...")
-                    await message.channel.send(chunk)
+            self.logger.info("No image attachment found, generating image with user prompt.")
+            image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
 
-    def replace_mentions(self, text):
-        mention = f"<@{self.user.id}>"
-        parts = text.split(mention)
-        if len(parts) <= 1:
-            return text
-
-        result = parts[0]
-        for i, part in enumerate(parts[1:]):
-            if i == 0:
-                result += "" + part
-            else:
-                result += "Juno" + part
-
-        return result
+        image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
+        filename = "edited_image.png" if image_attachment else "generated_image.png"
+        image_file = discord.File(image_bytes, filename=filename)
+        await self.response_service.send_response(message, image_generation_response.text_response, image_file)
