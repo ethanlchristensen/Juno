@@ -10,9 +10,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def require_voice_channel(
-    ephemeral: bool = True, allow_admin_bypass: bool = False
-) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+def require_voice_channel(ephemeral: bool = True, allow_admin_bypass: bool = False) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
     A decorator that checks if the user is in a voice channel before executing the command.
 

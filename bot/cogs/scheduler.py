@@ -69,9 +69,7 @@ class SchedulerCog(commands.Cog):
                 now_in_guild_tz = now_utc.astimezone(tz)
 
                 # Check if it's time to send the message
-                if (
-                    now_in_guild_tz.hour == config.get("hour", 12) and now_in_guild_tz.minute < config.get("minute", 0) + 1
-                ):  # 1-minute window to account for loop interval
+                if now_in_guild_tz.hour == config.get("hour", 12) and now_in_guild_tz.minute < config.get("minute", 0) + 1:  # 1-minute window to account for loop interval
                     channel_id = config.get("channel_id")
                     if not channel_id:
                         continue

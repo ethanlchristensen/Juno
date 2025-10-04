@@ -10,6 +10,7 @@ T = TypeVar("T", bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 
+
 class BaseService(ABC):
     @abstractmethod
     async def chat(self, model: str, messages: list[dict[str, str]], **kwargs) -> AIChatResponse:

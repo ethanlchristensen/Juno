@@ -74,9 +74,7 @@ class ConfigService:
     def load(self) -> Config:
         """Load and validate configuration from JSON file."""
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(
-                f"Configuration file not found: {self.config_path}. Please copy config.sample.json to config.json and configure it."
-            )
+            raise FileNotFoundError(f"Configuration file not found: {self.config_path}. Please copy config.sample.json to config.json and configure it.")
 
         with open(self.config_path) as file:
             raw_config = json.load(file)

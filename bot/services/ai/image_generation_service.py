@@ -24,9 +24,7 @@ class ImageGenerationService:
         """
         self.client = Client(api_key=config.aiConfig.gemini.apiKey)
         self.model = model
-        self.base_prompt = (
-            "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
-        )
+        self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
 
     async def download_image_from_url(self, url: str) -> Image.Image | None:
         """

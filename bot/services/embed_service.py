@@ -136,9 +136,7 @@ class EmbedService:
                 metadata: AudioMetaData = item.get("metadata")
                 author_text = metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"
                 if metadata:
-                    queue_display.append(
-                        f"- **{i}.** [{metadata.title}]({metadata.webpage_url}) - {author_text}\n  - {self.format_duration(metadata.duration)}\n  - Requested by: **{metadata.requested_by}**"
-                    )
+                    queue_display.append(f"- **{i}.** [{metadata.title}]({metadata.webpage_url}) - {author_text}\n  - {self.format_duration(metadata.duration)}\n  - Requested by: **{metadata.requested_by}**")
 
             embed.description = "\n".join(queue_display)
 

@@ -10,7 +10,6 @@ from .openai_service import OpenAIService
 logger = logging.getLogger(__name__)
 
 
-
 class AiServiceFactory:
     _service_cache = {}
 

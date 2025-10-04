@@ -146,9 +146,7 @@ class Juno(commands.Bot):
 
                 if image_attachment:
                     self.logger.info(f"Editing image: {image_attachment.filename}")
-                    image_generation_response = await self.image_generation_service.edit_image_from_url(
-                        prompt=message.content, image_url=image_attachment.url
-                    )
+                    image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
                     image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
                     image_file = discord.File(image_bytes, filename="edited_image.png")
                     await self._send_response(message, image_generation_response.text_response, image_file)
