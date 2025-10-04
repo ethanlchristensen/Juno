@@ -11,7 +11,6 @@ from discord.ext import commands, tasks
 from bot.services.ai.types import Message
 from bot.utils.decarators.admin_check import is_admin
 from bot.utils.decarators.command_logging import log_command_usage
-from bot.services.config_service import Config
 
 if TYPE_CHECKING:
     from bot.juno import Juno
