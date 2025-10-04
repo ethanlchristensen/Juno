@@ -30,8 +30,7 @@ class Juno(commands.Bot):
         self.user_cooldowns = defaultdict(float)
         self.cooldown_duration = int(os.getenv("MENTION_COOLDOWN", "60"))
         self.cooldown_bypass_ids = json.loads(os.getenv("COOLDOWN_BYPASS_IDS", "[]"))
-        # self.bot_id = int(os.getenv("BOT_ID", ""))
-        self.bot_id = "1188732299399942174"
+        self.bot_id = int(os.getenv("BOT_ID", ""))
         self.ai_orchestrator = AiOrchestrator()
         self.image_generation_service = ImageGenerationService()
         if prompts_path := os.getenv("PROMPTS_PATH"):
