@@ -6,37 +6,9 @@ on:
       - main
 
 jobs:
-  deploy-dev:
-    runs-on: [self-hosted, linux, arm64, EPIC]
-    environment: development
-    
-    steps:
-      - name: Verify Current Directory
-        run: |
-          echo "Ensuring we are in the correct directory:"
-          pwd
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Checkout Secrets Dev
-        run: cp /home/ethan/source/repos/Juno/development.config.json ./development.config.json
-      - name: Checkout Prompts
-        run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
-
-      - name: Deploy Dev with Docker Compose
-        run: |
-          echo "Stopping existing dev services (if any)..."
-          docker compose down juno-dev --remove-orphans || true
-          echo "Building and starting dev services..."
-          docker compose up -d --build juno-dev
-          echo "Cleaning up old Docker images..."
-          docker image prune -af
-
   deploy-prod:
     runs-on: [self-hosted, linux, arm64, EPIC]
     environment: production
-    needs: deploy-dev
     
     steps:
       - name: Verify Current Directory
