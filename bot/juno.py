@@ -100,6 +100,8 @@ class Juno(commands.Bot):
         if not self._should_respond_to_message(message, reference_message):
             return
         
+        self.logger.info("WE SHOULD RESPOND TO THE MESSAGE!")
+        
         # Apply cooldown check
         if not self._check_cooldown(message.author.id, message.author.name):
             return
@@ -125,8 +127,17 @@ class Juno(commands.Bot):
                     None
                 )
 
+                # If no attachment, check if replying to a bot message with an image
+                if not image_attachment and reference_message and reference_message.author.id == self.user.id:
+                    image_attachment = next(
+                        (att for att in reference_message.attachments if att.content_type and att.content_type.startswith('image/')),
+                        None
+                    )
+                    if image_attachment:
+                        self.logger.info(f"Found image in referenced bot message: {image_attachment.filename}")
+
                 if image_attachment:
-                    self.logger.info(f"Found image attachment: {image_attachment.filename}")
+                    self.logger.info(f"Editing image: {image_attachment.filename}")
                     image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
                     image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
                     image_file = discord.File(image_bytes, filename="edited_image.png")
@@ -138,7 +149,6 @@ class Juno(commands.Bot):
                     image_file = discord.File(image_bytes, filename="generated_image.png")
                     await self._send_response(message, image_generation_response.text_response, image_file)
 
-
     async def _get_reference_message(self, message: discord.Message):
         """Get the referenced message if this is a reply."""
         if not message.reference:
@@ -148,12 +158,16 @@ class Juno(commands.Bot):
             return await message.channel.fetch_message(message.reference.message_id)
         except discord.NotFound:
             return None
-
+        
     def _should_respond_to_message(self, message: discord.Message, reference_message):
         """Check if the bot should respond to this message."""
-        bot_string = f"<@{self.bot_id}>"
-        return (bot_string in message.content or 
-                (reference_message and reference_message.author.id == self.bot_id))
+        # Use self.user.id instead of self.bot_id
+        if not self.user:
+            return False
+        
+        bot_string = f"<@{self.user.id}>"
+        should_respond = bot_string in message.content or (reference_message and reference_message.author.id == self.user.id)
+        return should_respond
 
     def _check_cooldown(self, user_id: int, username: str) -> bool:
         """Check if user is on cooldown. Returns True if can proceed."""
