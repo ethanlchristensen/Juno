@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./prompts.json:/app/prompts.json:ro
-      - ./config/development:/app/config
+      - ./config:/app/config
     restart: unless-stopped
   juno-prod:
     container_name: juno-prod
@@ -15,5 +15,5 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./prompts.json:/app/prompts.json:ro
-      - ./config/production:/app/config
+      - ./config:/app/config
     restart: unless-stopped
