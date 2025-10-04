@@ -51,6 +51,7 @@ class AIConfig:
     gemini: GeminiConfig | None = None
     elevenlabs: ElevenLabsConfig | None = None
     orchestrator: OrchestratorConfig | None = None
+    boostImagePrompts: bool | None = None
 
 
 @dataclass
@@ -109,6 +110,7 @@ class ConfigService:
             gemini=self._parse_gemini_config(ai_config_raw.get("gemini")),
             elevenlabs=self._parse_elevenlabs_config(ai_config_raw.get("elevenlabs")),
             orchestrator=self._parse_orchestrator_config(ai_config_raw.get("orchestrator")),
+            boostImagePrompts=ai_config_raw.get("boostImagePrompts"),
         )
 
         # Validate that the preferred provider is configured

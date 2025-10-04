@@ -39,7 +39,7 @@ class Juno(commands.Bot):
         self.audio_service = AudioService()
         self.music_queue_service = MusicQueueService(self)
         self.ai_orchestrator = AiOrchestrator(config=config)
-        self.image_generation_service = ImageGenerationService(bot=self, config=config)
+        self.image_generation_service = ImageGenerationService(self)
         self.message_service = MessageService(self, self.prompts, config.idToUsers)
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)

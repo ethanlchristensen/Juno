@@ -7,7 +7,6 @@ import aiohttp
 from google.genai import Client
 from PIL import Image
 
-from ..config_service import Config
 from .types import ImageGenerationResponse, Message, Role
 
 if TYPE_CHECKING:
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ImageGenerationService:
     """Service for generating and editing images using Gemini AI."""
 
-    def __init__(self, bot: "Juno", config: Config, model: str = "gemini-2.5-flash-image"):
+    def __init__(self, bot: "Juno", model: str = "gemini-2.5-flash-image"):
         """
         Initialize the image generation service.
 
@@ -27,7 +26,7 @@ class ImageGenerationService:
             model: The Gemini model to use for image generation
         """
         self.bot = bot
-        self.client = Client(api_key=config.aiConfig.gemini.apiKey)
+        self.client = Client(api_key=bot.config.aiConfig.gemini.apiKey)
         self.model = model
         self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
 
@@ -154,9 +153,11 @@ Be specific and thorough as this description will be used for image editing cont
         """
         try:
             # Boost the prompt for better results
-            boosted_prompt = await self.boost_prompt(prompt)
+            boosted_prompt = prompt
+            if self.bot.config.aiConfig.boostImagePrompts:
+                boosted_prompt = await self.boost_prompt(prompt)
 
-            logger.info(f"Generating image with boosted prompt: {boosted_prompt}")
+            logger.info(f"Generating image with {'boosted ' if self.bot.config.aiConfig.boostImagePrompts else ''}prompt: {boosted_prompt}")
 
             # Use asyncio.to_thread to avoid blocking
             response = await asyncio.to_thread(
@@ -196,12 +197,12 @@ Be specific and thorough as this description will be used for image editing cont
         """
         try:
             # Describe the image first
-            image_description = await self.describe_image(source_image)
-
-            # Boost the prompt with image context
-            boosted_prompt = await self.boost_prompt(prompt, image_description)
-
-            logger.info(f"Editing image with boosted prompt: {boosted_prompt}")
+            if self.bot.config.aiConfig.boostImagePrompts:
+                image_description = await self.describe_image(source_image)
+                boosted_prompt = await self.boost_prompt(prompt, image_description)
+                logger.info(f"Editing image with boosted prompt: {boosted_prompt}")
+            else:
+                boosted_prompt = prompt
 
             # Use asyncio.to_thread to avoid blocking
             response = await asyncio.to_thread(
