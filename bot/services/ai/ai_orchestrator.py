@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from bot.services  import AiServiceFactory
@@ -22,27 +22,39 @@ class AiOrchestrator:
         self.ai_service = AiServiceFactory.get_service(preferred_provider)
         logger.info(f"Initialized AiOrchestrator with provider={preferred_provider}, model={self.model}")
     
-    async def detect_intent(self, user_message: str) -> UserIntent:
+    async def detect_intent(
+        self, 
+        user_message: str,
+        is_replying_to_bot_image: bool = False
+    ) -> UserIntent:
         """
         Detect if the user wants to chat or generate an image.
         
         Args:
             user_message: The user's message
+            is_replying_to_bot_image: Whether the user is replying to a bot message containing an image
             
         Returns:
             UserIntent: Either "chat" or "image_generation"
         """
-        system_prompt = """You are an intent classifier. Determine if the user wants to:
+        context_note = ""
+        if is_replying_to_bot_image:
+            context_note = "\n\nIMPORTANT: The user is replying to a bot message that contains an image. This strongly suggests they want to edit or modify that image, unless their message clearly indicates otherwise (e.g., asking a question about the image)."
+
+        system_prompt = f"""You are an intent classifier. Determine if the user wants to:
 - chat: Have a conversation, ask questions, get information
-- image_generation: Create, generate, or make an image/picture/photo
+- image_generation: Create, generate, make, edit, or modify an image/picture/photo
 
 Examples of image_generation:
 - "generate an image of a cat"
 - "create a picture of a sunset"
 - "make me a logo"
 - "draw a dragon"
+- "make it darker" (when replying to an image)
+- "add a hat to this" (when replying to an image)
+- "change the background to blue" (when replying to an image)
 
-Everything else is chat."""
+Everything else is chat.{context_note}"""
 
         messages = [
             Message(role="system", content=system_prompt),
@@ -56,7 +68,7 @@ Everything else is chat."""
                 model=self.model
             )
             
-            logger.info(f"Detected intent: {intent.intent}")
+            logger.info(f"Detected intent: {intent.intent} (replying_to_image={is_replying_to_bot_image})")
             return intent
             
         except Exception as e:

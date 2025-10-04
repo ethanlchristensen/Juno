@@ -113,7 +113,15 @@ class Juno(commands.Bot):
         # Process and respond
         async with message.channel.typing():
             # Determine the intent
-            user_intent = await self.ai_orchestrator.detect_intent(user_message=message.content)
+            is_replying_to_bot_image = False
+            if reference_message and reference_message.author.id == self.user.id:
+                has_image = any(
+                    att.content_type and att.content_type.startswith('image/') 
+                    for att in reference_message.attachments
+                )
+                is_replying_to_bot_image = has_image
+
+            user_intent = await self.ai_orchestrator.detect_intent(user_message=message.content, is_replying_to_bot_image=is_replying_to_bot_image)
 
             if user_intent.intent == "chat":
                 self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
