@@ -41,7 +41,7 @@ class SchedulerCog(commands.Cog):
             self.bot.logger.info(f"Morning configs saved to {configs_path}")
         except Exception as e:
             self.bot.logger.error(f"Error saving morning configs: {e}")
-        
+
     def cog_unload(self):
         self.check.cancel()
 
@@ -52,7 +52,7 @@ class SchedulerCog(commands.Cog):
             return
 
         now_utc = datetime.now(timezone.utc)
-        
+
         for guild_id, config in self.morning_configs.items():
             try:
                 # Get the configured time in the configured timezone
@@ -60,23 +60,29 @@ class SchedulerCog(commands.Cog):
                 try:
                     tz = pytz.timezone(guild_tz)
                 except pytz.exceptions.UnknownTimeZoneError:
-                    self.bot.logger.warning(f"Unknown timezone for guild {guild_id}: {guild_tz}, defaulting to UTC")
+                    self.bot.logger.warning(
+                        f"Unknown timezone for guild {guild_id}: {guild_tz}, defaulting to UTC"
+                    )
                     tz = pytz.UTC
-                    
+
                 # Get current time in the guild's timezone
                 now_in_guild_tz = now_utc.astimezone(tz)
-                
+
                 # Check if it's time to send the message
-                if (now_in_guild_tz.hour == config.get("hour", 12) and 
-                    now_in_guild_tz.minute < config.get("minute", 0) + 1):  # 1-minute window to account for loop interval
-                    
+                if (
+                    now_in_guild_tz.hour == config.get("hour", 12)
+                    and now_in_guild_tz.minute < config.get("minute", 0) + 1
+                ):  # 1-minute window to account for loop interval
+
                     channel_id = config.get("channel_id")
                     if not channel_id:
                         continue
 
                     guild = self.bot.get_guild(int(guild_id))
                     if not guild:
-                        self.bot.logger.warning(f"Could not find guild with ID {guild_id}")
+                        self.bot.logger.warning(
+                            f"Could not find guild with ID {guild_id}"
+                        )
                         continue
 
                     channel = guild.get_channel(int(channel_id))
@@ -139,16 +145,14 @@ class SchedulerCog(commands.Cog):
 
         # Get existing config or create new one
         guild_id = str(interaction.guild.id)
-        config = self.morning_configs.get(guild_id, {
-            "hour": 12,
-            "minute": 0,
-            "timezone": "UTC"
-        })
-        
+        config = self.morning_configs.get(
+            guild_id, {"hour": 12, "minute": 0, "timezone": "UTC"}
+        )
+
         # Update channel
         config["channel_id"] = channel.id
         self.morning_configs[guild_id] = config
-        
+
         # Save configs
         self._save_morning_configs()
 
@@ -161,6 +165,7 @@ class SchedulerCog(commands.Cog):
         self.bot.logger.info(
             f"Set morning channel for {interaction.guild.name} to {channel.name}"
         )
+
     @app_commands.command(
         name="set_morning_time",
         description="Set the time for morning messages",
@@ -168,50 +173,51 @@ class SchedulerCog(commands.Cog):
     @app_commands.describe(
         hour="Hour (0-23)",
         minute="Minute (0-59)",
-        timezone="Timezone (e.g., 'US/Eastern', 'Europe/London', defaults to UTC)"
+        timezone="Timezone (e.g., 'US/Eastern', 'Europe/London', defaults to UTC)",
     )
     @log_command_usage()
     @is_admin()
     async def set_morning_time(
-        self, interaction: discord.Interaction, hour: int, minute: int = 0, 
-        timezone: str = "UTC"
+        self,
+        interaction: discord.Interaction,
+        hour: int,
+        minute: int = 0,
+        timezone: str = "UTC",
     ):
         """Set the time for morning messages"""
         # Validate input
         if hour < 0 or hour > 23:
             await interaction.followup.send(
-                content="Hour must be between 0 and 23.",
-                ephemeral=True
+                content="Hour must be between 0 and 23.", ephemeral=True
             )
             return
-            
+
         if minute < 0 or minute > 59:
             await interaction.followup.send(
-                content="Minute must be between 0 and 59.",
-                ephemeral=True
+                content="Minute must be between 0 and 59.", ephemeral=True
             )
             return
-            
+
         # Validate timezone
         try:
             tz = pytz.timezone(timezone)
         except pytz.exceptions.UnknownTimeZoneError:
             await interaction.followup.send(
                 content=f"Unknown timezone: '{timezone}'. Please use a valid timezone like 'US/Eastern' or 'Europe/London'.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
         # Get existing config or create new one
         guild_id = interaction.guild.id
         config = self.morning_configs.get(str(guild_id), {})
-        
+
         # Update time and timezone
         config["hour"] = hour
         config["minute"] = minute
         config["timezone"] = timezone
         self.morning_configs[str(guild_id)] = config
-        
+
         # Save configs
         self._save_morning_configs()
 
@@ -232,6 +238,7 @@ class SchedulerCog(commands.Cog):
         self.bot.logger.info(
             f"Set morning time for {interaction.guild.name} to {hour}:{minute:02d} {timezone}"
         )
+
     @app_commands.command(
         name="remove_morning_channel",
         description="Remove morning messages for this server",
@@ -296,29 +303,34 @@ class SchedulerCog(commands.Cog):
             await interaction.followup.send(f"Error testing morning message: {e}")
             self.bot.logger.error(f"Error in test morning message: {e}")
 
-
     @app_commands.command(
         name="list_timezones",
-        description="List available timezones for morning message scheduling"
+        description="List available timezones for morning message scheduling",
     )
     @log_command_usage()
     @is_admin()
     async def list_timezones(self, interaction: discord.Interaction):
         """List common timezones that can be used"""
         common_timezones = [
-            "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
-            "Europe/London", "Europe/Berlin", "Europe/Moscow", 
-            "Asia/Tokyo", "Asia/Shanghai", "Australia/Sydney",
-            "Pacific/Auckland"
+            "UTC",
+            "US/Eastern",
+            "US/Central",
+            "US/Mountain",
+            "US/Pacific",
+            "Europe/London",
+            "Europe/Berlin",
+            "Europe/Moscow",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Australia/Sydney",
+            "Pacific/Auckland",
         ]
-        
+
         timezone_text = "**Available Timezones:**\n" + "\n".join(common_timezones)
         timezone_text += "\n\nFor a full list of timezones, see: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-        
-        await interaction.followup.send(
-            content=timezone_text,
-            ephemeral=True
-        )
+
+        await interaction.followup.send(content=timezone_text, ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(SchedulerCog(bot))

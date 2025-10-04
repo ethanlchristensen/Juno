@@ -9,26 +9,28 @@ from pydantic import BaseModel
 
 from .types import Message, AIChatResponse
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 class BaseService(ABC):
     @abstractmethod
-    async def chat(self, model: str, messages: List[Dict[str, str]], **kwargs) -> AIChatResponse:
+    async def chat(
+        self, model: str, messages: List[Dict[str, str]], **kwargs
+    ) -> AIChatResponse:
         pass
-    
+
     @abstractmethod
     async def chat_with_schema(
         self, messages: List[Message], schema: Type[T], model: Optional[str] = None
     ) -> T:
         """
         Sends a chat request with structured output based on a Pydantic schema.
-        
+
         Args:
             messages: List of messages for the conversation
             schema: Pydantic model class defining the expected output structure
             model: Optional model name override
-            
+
         Returns:
             Instance of the provided Pydantic model populated with the response
         """
@@ -68,52 +70,47 @@ class BaseService(ABC):
             # Anthropic requires content as string if no images, array if images
             if images := message.images:
                 content_parts = []
-                
+
                 # Add text first
                 if message.content:
-                    content_parts.append({
-                        "type": "text",
-                        "text": message.content
-                    })
-                
+                    content_parts.append({"type": "text", "text": message.content})
+
                 # Add images
                 for image in images:
-                    content_parts.append({
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": image.get("type", "image/jpeg"),
-                            "data": image.get("data", "")
+                    content_parts.append(
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": image.get("type", "image/jpeg"),
+                                "data": image.get("data", ""),
+                            },
                         }
-                    })
-                
-                mapped_message = {
-                    "role": message.role,
-                    "content": content_parts
-                }
+                    )
+
+                mapped_message = {"role": message.role, "content": content_parts}
             else:
-                mapped_message = {
-                    "role": message.role,
-                    "content": message.content
-                }
-            
+                mapped_message = {"role": message.role, "content": message.content}
+
             return mapped_message
         elif provider == "google":
             mapped_message = {
                 "role": message.role,
-                "parts": [{"text": message.content}]
+                "parts": [{"text": message.content}],
             }
 
             if mapped_message["role"] in ["assistant", "system"]:
                 mapped_message["role"] = "model"
-            
+
             if images := message.images:
                 for image in images:
-                    mapped_message["parts"].append({
-                        "inline_data": {
-                            "mime_type": image.get("type", ""),
-                            "data": image.get("data", "")
+                    mapped_message["parts"].append(
+                        {
+                            "inline_data": {
+                                "mime_type": image.get("type", ""),
+                                "data": image.get("data", ""),
+                            }
                         }
-                    })
+                    )
 
             return mapped_message

@@ -32,8 +32,7 @@ class Juno(commands.Bot):
         self.start_time = time.time()
         self.juno_slash = JunoSlash(self.tree)
         self.ai_service = AiServiceFactory.get_service(
-            provider=config.aiConfig.preferredAiProvider,
-            config=config
+            provider=config.aiConfig.preferredAiProvider, config=config
         )
         self.embed_service = EmbedService()
         self.audio_service = AudioService()

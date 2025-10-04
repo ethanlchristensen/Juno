@@ -25,19 +25,21 @@ class MusicCog(commands.Cog):
         """Autocomplete for filter presets"""
         choices = []
         current_lower = current.lower()
-        
+
         for preset in FilterPreset:
             # Filter based on user input
-            if (current_lower in preset.display_name.lower() or 
-                current_lower in preset.value.lower()):
+            if (
+                current_lower in preset.display_name.lower()
+                or current_lower in preset.value.lower()
+            ):
                 choices.append(
                     app_commands.Choice(name=preset.display_name, value=preset.value)
                 )
-                
+
                 # Discord limits autocomplete to 25 choices
                 if len(choices) >= 25:
                     break
-                    
+
         return choices
 
     @app_commands.command(
@@ -85,10 +87,9 @@ class MusicCog(commands.Cog):
                 f"Failed to join voice channel: {e}", ephemeral=True
             )
             return
-        
 
         queue_position = player.queue.qsize() + 1
-        
+
         should_start_playback = not player.is_playing and player.queue.qsize() == 1
 
         await player.enqueue(
@@ -206,14 +207,13 @@ class MusicCog(commands.Cog):
                 "No song is currently playing to apply a filter to.", ephemeral=True
             )
 
-
     @app_commands.command(
         name="seek", description="Seek to a specific position in the current song."
     )
     @app_commands.describe(
         hours="Hours (optional)",
         minutes="Minutes (optional)",
-        seconds="Seconds (optional)"
+        seconds="Seconds (optional)",
     )
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
@@ -225,44 +225,46 @@ class MusicCog(commands.Cog):
         seconds: Optional[int] = 0,
     ):
         player = self.bot.music_queue_service.get_player(interaction.guild)
-        
+
         if not player.current:
             await interaction.response.send_message(
                 "No song is currently playing.", ephemeral=True
             )
             return
-        
+
         # Validate inputs
         if hours < 0 or minutes < 0 or seconds < 0:
             await interaction.response.send_message(
-                "Please provide non-negative values for hours, minutes, and seconds.", 
-                ephemeral=True
+                "Please provide non-negative values for hours, minutes, and seconds.",
+                ephemeral=True,
             )
             return
-        
+
         # If no values were provided, default to beginning of the song
         if hours == 0 and minutes == 0 and seconds == 0:
             await interaction.response.send_message(
                 "Please specify at least one time value (hours, minutes, or seconds).",
-                ephemeral=True
+                ephemeral=True,
             )
             return
-        
+
         # Calculate total seconds
         total_seconds = (hours * 3600) + (minutes * 60) + seconds
-        
+
         # Check if position exceeds song duration
         duration = player.current.get("metadata").duration
         if duration and total_seconds > duration:
             minutes, seconds = divmod(duration, 60)
             hours, minutes = divmod(minutes, 60)
-            time_format = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+            time_format = (
+                f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+            )
             await interaction.response.send_message(
                 f"Cannot seek to {total_seconds} seconds. Song is only {time_format} long.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
-        
+
         if await player.seek(total_seconds):
             # Format time for display
             m, s = divmod(total_seconds, 60)
@@ -273,12 +275,13 @@ class MusicCog(commands.Cog):
             if m > 0 or h > 0:
                 time_format += f"{m}m "
             time_format += f"{s}s"
-            
+
             await interaction.response.send_message(f"Seeked to {time_format}")
         else:
             await interaction.response.send_message(
                 "Failed to seek. Make sure a song is playing.", ephemeral=True
             )
+
 
 async def setup(bot: discord.Client):
     await bot.add_cog(MusicCog(bot))

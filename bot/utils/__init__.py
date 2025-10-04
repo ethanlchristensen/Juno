@@ -3,9 +3,4 @@ from .decarators.command_logging import log_command_usage
 from .decarators.voice_check import require_voice_channel
 from .juno_slash import JunoSlash
 
-__all__ = [
-    "is_admin",
-    "log_command_usage",
-    "require_voice_channel",
-    "JunoSlash"
-]
+__all__ = ["is_admin", "log_command_usage", "require_voice_channel", "JunoSlash"]

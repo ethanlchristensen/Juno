@@ -53,8 +53,10 @@ class ReplyCommand(app_commands.Command):
                 await target_message.reply(
                     content=message or "",
                     file=file_to_send,
-                    mention_author=False # Set to True if you want the bot to mention the original author
+                    mention_author=False,  # Set to True if you want the bot to mention the original author
                 )
                 await interaction.followup.send("Reply sent!", ephemeral=True)
             except Exception as e:
-                await interaction.followup.send(f"An error occurred: {e}", ephemeral=True)
+                await interaction.followup.send(
+                    f"An error occurred: {e}", ephemeral=True
+                )
