@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 import aiohttp
 from google.genai import Client
-from google.genai.types import HarmBlockThreshold, HarmCategory
 from PIL import Image
 
 from .types import ImageGenerationResponse, Message, Role
@@ -26,14 +25,8 @@ class ImageGenerationService:
         Args:
             model: The Gemini model to use for image generation
         """
-        SAFETY_SETTINGS = {
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        }
         self.bot = bot
-        self.client = Client(api_key=bot.config.aiConfig.gemini.apiKey, safety_settings=SAFETY_SETTINGS)
+        self.client = Client(api_key=bot.config.aiConfig.gemini.apiKey)
         self.model = model
         self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
 
@@ -224,6 +217,12 @@ Be specific and thorough as this description will be used for image editing cont
                 model=self.model,
                 contents=[self.base_prompt, boosted_prompt, source_image],
             )
+
+            if response.candidates[0].finish_reason.name == "IMAGE_SAFETY":
+                logger.warning(f"Image generation blocked by IMAGE_SAFETY for prompt: {boosted_prompt}")
+                image_generation_response = ImageGenerationResponse()
+                image_generation_response.text_response = "Image generation was blocked due to safety filters. Please try a different prompt."
+                return image_generation_response
 
             image_generation_response = ImageGenerationResponse()
 

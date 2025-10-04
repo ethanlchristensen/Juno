@@ -153,7 +153,10 @@ class Juno(commands.Bot):
             self.logger.info("No image attachment found, generating image with user prompt.")
             image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
 
-        image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
-        filename = "edited_image.png" if image_attachment else "generated_image.png"
-        image_file = discord.File(image_bytes, filename=filename)
-        await self.response_service.send_response(message, image_generation_response.text_response, image_file)
+        if image_generation_response.generated_image:
+            image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
+            filename = "edited_image.png" if image_attachment else "generated_image.png"
+            image_file = discord.File(image_bytes, filename=filename)
+            await self.response_service.send_response(message, image_generation_response.text_response, image_file)
+        else:
+            await self.response_service.send_response(message, image_generation_response.text_response)
