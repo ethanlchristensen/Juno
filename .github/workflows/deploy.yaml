@@ -1,18 +1,37 @@
-name: Deploy to Pi (Self-Hosted)
+name: Lint and Deploy
 
 on:
-  workflow_run:
-    workflows: ["Lint"]
-    types:
-      - completed
-    branches:
-      - main
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      
+      - name: Install dependencies
+        run: |
+          pip install ruff
+      
+      - name: Run Ruff linter
+        run: ruff check .
+      
+      - name: Run Ruff formatter
+        run: ruff format --check .
+
   deploy-prod:
+    needs: lint
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: [self-hosted, linux, arm64, EPIC]
     environment: production
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
       - name: Verify Current Directory
