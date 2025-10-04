@@ -1,7 +1,6 @@
 import logging
 
-from bot.services import AiServiceFactory
-
+from ..ai.ai_service_factory import AiServiceFactory
 from ..config_service import Config
 from .types import Message, UserIntent
 

@@ -5,7 +5,7 @@ from datetime import datetime
 
 import discord
 
-from bot.services import AudioMetaData, AudioSource
+from .music.types import AudioMetaData, AudioSource
 
 
 class EmbedService:
