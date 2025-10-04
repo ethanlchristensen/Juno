@@ -1,13 +1,17 @@
 import asyncio
 import logging
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import aiohttp
 from google.genai import Client
 from PIL import Image
 
 from ..config_service import Config
-from .types import ImageGenerationResponse
+from .types import ImageGenerationResponse, Message, Role
+
+if TYPE_CHECKING:
+    from bot.juno import Juno
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +19,102 @@ logger = logging.getLogger(__name__)
 class ImageGenerationService:
     """Service for generating and editing images using Gemini AI."""
 
-    def __init__(self, config: Config, model: str = "gemini-2.5-flash-image"):
+    def __init__(self, bot: "Juno", config: Config, model: str = "gemini-2.5-flash-image"):
         """
         Initialize the image generation service.
 
         Args:
             model: The Gemini model to use for image generation
         """
+        self.bot = bot
         self.client = Client(api_key=config.aiConfig.gemini.apiKey)
         self.model = model
         self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
+
+    async def boost_prompt(self, user_prompt: str, image_description: str | None = None) -> str:
+        """
+        Enhance the user's prompt using AI to create more detailed image generation instructions.
+
+        Args:
+            user_prompt: The original user prompt
+            image_description: Optional description of an existing image for context
+
+        Returns:
+            Enhanced prompt string
+        """
+        try:
+            logger.info(f"Boosting prompt: {user_prompt}")
+
+            system_message = Message(
+                role=Role.SYSTEM,
+                content="""You are a prompt enhancement specialist for image generation AI.
+Your job is to take user prompts and enhance them with specific details about composition,
+lighting, style, colors, mood, and technical aspects that will help generate better images.
+Keep the core intent of the user's request while adding helpful details.
+Return ONLY the enhanced prompt, no explanations or commentary.""",
+            )
+
+            if image_description:
+                user_message = Message(
+                    role=Role.USER,
+                    content=f"""Original image description: {image_description}
+
+User's edit request: {user_prompt}
+
+Please enhance this edit request with specific details while maintaining the context of the original image.""",
+                )
+            else:
+                user_message = Message(role=Role.USER, content=f"User prompt: {user_prompt}\n\nPlease enhance this prompt with specific details for image generation.")
+
+            response = await self.bot.ai_service.chat(messages=[system_message, user_message])
+            boosted_prompt = response.content.strip()
+
+            logger.info(f"Boosted prompt: {boosted_prompt}")
+            return boosted_prompt
+
+        except Exception as e:
+            logger.error(f"Error boosting prompt: {e}", exc_info=True)
+            # Return original prompt if boosting fails
+            return user_prompt
+
+    async def describe_image(self, image: Image.Image) -> str:
+        """
+        Generate a detailed description of an image using AI.
+
+        Args:
+            image: The PIL Image to describe
+
+        Returns:
+            Description string
+        """
+        try:
+            logger.info("Generating image description")
+
+            # Convert image to base64 for sending to AI
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            import base64
+
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+
+            system_message = Message(
+                role=Role.SYSTEM,
+                content="""You are an image analysis expert. Describe the image in detail,
+including composition, subjects, colors, lighting, mood, style, and any notable elements.
+Be specific and thorough as this description will be used for image editing context.""",
+            )
+
+            user_message = Message(role=Role.USER, content="Please describe this image in detail.", images=[{"type": "image/png", "data": img_str}])
+
+            response = await self.bot.ai_service.chat(messages=[system_message, user_message])
+            description = response.content.strip()
+
+            logger.info(f"Generated description: {description[:100]}...")
+            return description
+
+        except Exception as e:
+            logger.error(f"Error describing image: {e}", exc_info=True)
+            return "Unable to describe image"
 
     async def download_image_from_url(self, url: str) -> Image.Image | None:
         """
@@ -60,16 +150,19 @@ class ImageGenerationService:
             prompt: The text description of the image to generate
 
         Returns:
-            PIL Image object if successful, None otherwise
+            ImageGenerationResponse with generated image and optional text
         """
         try:
-            logger.info(f"Generating image with prompt: {prompt}")
+            # Boost the prompt for better results
+            boosted_prompt = await self.boost_prompt(prompt)
+
+            logger.info(f"Generating image with boosted prompt: {boosted_prompt}")
 
             # Use asyncio.to_thread to avoid blocking
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
                 model=self.model,
-                contents=[self.base_prompt, prompt],
+                contents=[self.base_prompt, boosted_prompt],
             )
 
             image_generation_response = ImageGenerationResponse()
@@ -99,16 +192,22 @@ class ImageGenerationService:
             source_image: The PIL Image to edit
 
         Returns:
-            PIL Image object if successful, None otherwise
+            ImageGenerationResponse with edited image and optional text
         """
         try:
-            logger.info(f"Editing image with prompt: {prompt}")
+            # Describe the image first
+            image_description = await self.describe_image(source_image)
+
+            # Boost the prompt with image context
+            boosted_prompt = await self.boost_prompt(prompt, image_description)
+
+            logger.info(f"Editing image with boosted prompt: {boosted_prompt}")
 
             # Use asyncio.to_thread to avoid blocking
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
                 model=self.model,
-                contents=[self.base_prompt, prompt, source_image],
+                contents=[self.base_prompt, boosted_prompt, source_image],
             )
 
             image_generation_response = ImageGenerationResponse()
@@ -138,7 +237,7 @@ class ImageGenerationService:
             image_url: The URL of the image to download and edit
 
         Returns:
-            PIL Image object if successful, None otherwise
+            ImageGenerationResponse with edited image and optional text
         """
         source_image = await self.download_image_from_url(image_url)
         if source_image is None:

@@ -33,15 +33,13 @@ class Juno(commands.Bot):
         # Load prompts
         self.prompts = self._load_prompts(config.promptsPath)
 
-        # Initialize services
+        # Services
         self.ai_service = AiServiceFactory.get_service(provider=config.aiConfig.preferredAiProvider, config=config)
         self.embed_service = EmbedService()
         self.audio_service = AudioService()
         self.music_queue_service = MusicQueueService(self)
         self.ai_orchestrator = AiOrchestrator(config=config)
-        self.image_generation_service = ImageGenerationService(config=config)
-
-        # New extracted services
+        self.image_generation_service = ImageGenerationService(bot=self, config=config)
         self.message_service = MessageService(self, self.prompts, config.idToUsers)
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
