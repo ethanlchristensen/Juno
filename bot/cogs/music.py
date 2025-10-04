@@ -1,11 +1,11 @@
+from typing import TYPE_CHECKING
+
 import discord
-
-from discord.ext import commands
 from discord import app_commands
-from typing import TYPE_CHECKING, Optional, List
+from discord.ext import commands
 
-from bot.services.music.types import FilterPreset
 from bot.services.embed_service import QueuePaginationView
+from bot.services.music.types import FilterPreset
 from bot.utils.decarators.command_logging import log_command_usage
 from bot.utils.decarators.voice_check import require_voice_channel
 
@@ -21,20 +21,15 @@ class MusicCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         current: str,
-    ) -> List[app_commands.Choice[str]]:
+    ) -> list[app_commands.Choice[str]]:
         """Autocomplete for filter presets"""
         choices = []
         current_lower = current.lower()
 
         for preset in FilterPreset:
             # Filter based on user input
-            if (
-                current_lower in preset.display_name.lower()
-                or current_lower in preset.value.lower()
-            ):
-                choices.append(
-                    app_commands.Choice(name=preset.display_name, value=preset.value)
-                )
+            if current_lower in preset.display_name.lower() or current_lower in preset.value.lower():
+                choices.append(app_commands.Choice(name=preset.display_name, value=preset.value))
 
                 # Discord limits autocomplete to 25 choices
                 if len(choices) >= 25:
@@ -42,9 +37,7 @@ class MusicCog(commands.Cog):
 
         return choices
 
-    @app_commands.command(
-        name="join", description="Have Juno join the VC you are currently in."
-    )
+    @app_commands.command(name="join", description="Have Juno join the VC you are currently in.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def join(self, interaction: discord.Interaction):
@@ -55,15 +48,11 @@ class MusicCog(commands.Cog):
         await interaction.response.send_message(f"Joined {channel.name}")
 
     @app_commands.command(name="play", description="Play a song with a link or query.")
-    @app_commands.describe(
-        query="Song name or YouTube link", filter="Audio filter to apply"
-    )
+    @app_commands.describe(query="Song name or YouTube link", filter="Audio filter to apply")
     @app_commands.autocomplete(filter=filter_autocomplete)
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
-    async def play(
-        self, interaction: discord.Interaction, query: str, filter: Optional[str]
-    ):
+    async def play(self, interaction: discord.Interaction, query: str, filter: str | None):
         await interaction.response.defer(ephemeral=True)
 
         player = self.bot.music_queue_service.get_player(interaction.guild)
@@ -83,26 +72,20 @@ class MusicCog(commands.Cog):
             # If the bot is already connected, let's grab the vc.
             player.voice_client = interaction.guild.voice_client
         except Exception as e:
-            await interaction.followup.send(
-                f"Failed to join voice channel: {e}", ephemeral=True
-            )
+            await interaction.followup.send(f"Failed to join voice channel: {e}", ephemeral=True)
             return
 
         queue_position = player.queue.qsize() + 1
 
         should_start_playback = not player.is_playing and player.queue.qsize() == 1
 
-        await player.enqueue(
-            metadata.url, metadata, filter_preset, text_channel=interaction.channel
-        )
+        await player.enqueue(metadata.url, metadata, filter_preset, text_channel=interaction.channel)
 
         if should_start_playback:
             await interaction.followup.send("Starting playback...", ephemeral=True)
         else:
             queue_position = player.queue.qsize()
-            embed = self.bot.embed_service.create_added_to_queue_embed(
-                metadata, queue_position, interaction.user.display_name
-            )
+            embed = self.bot.embed_service.create_added_to_queue_embed(metadata, queue_position, interaction.user.display_name)
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="skip", description="Skip actively playing audio.")
@@ -114,13 +97,9 @@ class MusicCog(commands.Cog):
         if await player.skip():
             await interaction.response.send_message("Skipped to next track.")
         else:
-            await interaction.response.send_message(
-                "Nothing is playing.", ephemeral=True
-            )
+            await interaction.response.send_message("Nothing is playing.", ephemeral=True)
 
-    @app_commands.command(
-        name="pause", description="Pause the currently playing audio."
-    )
+    @app_commands.command(name="pause", description="Pause the currently playing audio.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def pause(self, interaction: discord.Interaction):
@@ -129,13 +108,9 @@ class MusicCog(commands.Cog):
         if await player.pause():
             await interaction.response.send_message("Paused the audio!")
         else:
-            await interaction.response.send_message(
-                "No audio is playing!", ephemeral=True
-            )
+            await interaction.response.send_message("No audio is playing!", ephemeral=True)
 
-    @app_commands.command(
-        name="resume", description="Resume audio that was previously paused."
-    )
+    @app_commands.command(name="resume", description="Resume audio that was previously paused.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def resume(self, interaction: discord.Interaction):
@@ -144,13 +119,9 @@ class MusicCog(commands.Cog):
         if await player.resume():
             await interaction.response.send_message("Resumed the audio!")
         else:
-            await interaction.response.send_message(
-                "No audio is available to resume!", ephemeral=True
-            )
+            await interaction.response.send_message("No audio is available to resume!", ephemeral=True)
 
-    @app_commands.command(
-        name="leave", description="Have Juno leave the voice channel."
-    )
+    @app_commands.command(name="leave", description="Have Juno leave the voice channel.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def leave(self, interaction: discord.Interaction):
@@ -160,9 +131,7 @@ class MusicCog(commands.Cog):
             self.bot.music_queue_service.remove_player(interaction.guild)
             await interaction.response.send_message("Disconnected.")
         else:
-            await interaction.response.send_message(
-                "Not connected to a voice channel.", ephemeral=True
-            )
+            await interaction.response.send_message("Not connected to a voice channel.", ephemeral=True)
 
     @app_commands.command(name="queue", description="View the current music queue.")
     @log_command_usage()
@@ -184,9 +153,7 @@ class MusicCog(commands.Cog):
 
         await interaction.response.send_message(embed=embed, view=view)
 
-    @app_commands.command(
-        name="filter", description="Apply a new audio filter to the current track."
-    )
+    @app_commands.command(name="filter", description="Apply a new audio filter to the current track.")
     @app_commands.autocomplete(new_filter=filter_autocomplete)
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
@@ -199,17 +166,11 @@ class MusicCog(commands.Cog):
         filter_enum = FilterPreset.from_value(new_filter)
 
         if await player.set_filter(filter_enum):
-            await interaction.response.send_message(
-                f"Applied filter: `{filter_enum.display_name}`"
-            )
+            await interaction.response.send_message(f"Applied filter: `{filter_enum.display_name}`")
         else:
-            await interaction.response.send_message(
-                "No song is currently playing to apply a filter to.", ephemeral=True
-            )
+            await interaction.response.send_message("No song is currently playing to apply a filter to.", ephemeral=True)
 
-    @app_commands.command(
-        name="seek", description="Seek to a specific position in the current song."
-    )
+    @app_commands.command(name="seek", description="Seek to a specific position in the current song.")
     @app_commands.describe(
         hours="Hours (optional)",
         minutes="Minutes (optional)",
@@ -220,16 +181,14 @@ class MusicCog(commands.Cog):
     async def seek(
         self,
         interaction: discord.Interaction,
-        hours: Optional[int] = 0,
-        minutes: Optional[int] = 0,
-        seconds: Optional[int] = 0,
+        hours: int | None = 0,
+        minutes: int | None = 0,
+        seconds: int | None = 0,
     ):
         player = self.bot.music_queue_service.get_player(interaction.guild)
 
         if not player.current:
-            await interaction.response.send_message(
-                "No song is currently playing.", ephemeral=True
-            )
+            await interaction.response.send_message("No song is currently playing.", ephemeral=True)
             return
 
         # Validate inputs
@@ -256,9 +215,7 @@ class MusicCog(commands.Cog):
         if duration and total_seconds > duration:
             minutes, seconds = divmod(duration, 60)
             hours, minutes = divmod(minutes, 60)
-            time_format = (
-                f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
-            )
+            time_format = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
             await interaction.response.send_message(
                 f"Cannot seek to {total_seconds} seconds. Song is only {time_format} long.",
                 ephemeral=True,
@@ -278,9 +235,7 @@ class MusicCog(commands.Cog):
 
             await interaction.response.send_message(f"Seeked to {time_format}")
         else:
-            await interaction.response.send_message(
-                "Failed to seek. Make sure a song is playing.", ephemeral=True
-            )
+            await interaction.response.send_message("Failed to seek. Make sure a song is playing.", ephemeral=True)
 
 
 async def setup(bot: discord.Client):

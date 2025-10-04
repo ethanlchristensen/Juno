@@ -1,11 +1,11 @@
+import logging
 import os
 import random
-import discord
-import logging
-from typing import List, Optional
 from datetime import datetime
 
-from bot.services import AudioSource, AudioMetaData
+import discord
+
+from bot.services import AudioMetaData, AudioSource
 
 
 class EmbedService:
@@ -17,16 +17,14 @@ class EmbedService:
     def create_basic_embed(
         self,
         title: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         color: int = 0x3498DB,  # Default blue color
-        footer_text: Optional[str] = None,
-        thumbnail_url: Optional[str] = None,
-        image_url: Optional[str] = None,
+        footer_text: str | None = None,
+        thumbnail_url: str | None = None,
+        image_url: str | None = None,
     ) -> discord.Embed:
         """Create a basic Discord embed with common properties"""
-        embed = discord.Embed(
-            title=title, description=description, color=color, timestamp=datetime.now()
-        )
+        embed = discord.Embed(title=title, description=description, color=color, timestamp=datetime.now())
 
         if footer_text:
             embed.set_footer(text=footer_text)
@@ -39,9 +37,7 @@ class EmbedService:
 
         return embed
 
-    def create_added_to_queue_embed(
-        self, metadata: AudioMetaData, position: int, requested_by: Optional[str] = None
-    ) -> discord.Embed:
+    def create_added_to_queue_embed(self, metadata: AudioMetaData, position: int, requested_by: str | None = None) -> discord.Embed:
         """Create an embed for when a track is added to the queue"""
         if metadata.source == AudioSource.YOUTUBE:
             color = 0xFF0000
@@ -58,16 +54,10 @@ class EmbedService:
 
         embed.add_field(
             name=self.source_labels.get(metadata.source, "Source"),
-            value=(
-                metadata.author
-                if not metadata.author_url
-                else f"[{metadata.author}]({metadata.author_url})"
-            ),
+            value=(metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"),
             inline=True,
         )
-        embed.add_field(
-            name="Duration", value=self.format_duration(metadata.duration), inline=True
-        )
+        embed.add_field(name="Duration", value=self.format_duration(metadata.duration), inline=True)
         embed.add_field(name="Position in Queue", value=f"#{position}", inline=True)
 
         if requested_by:
@@ -77,9 +67,7 @@ class EmbedService:
             embed.set_thumbnail(url=metadata.thumbnail_url)
 
         if metadata.filter_preset:
-            embed.add_field(
-                name="Filter", value=metadata.filter_preset.display_name, inline=False
-            )
+            embed.add_field(name="Filter", value=metadata.filter_preset.display_name, inline=False)
 
         return embed
 
@@ -100,16 +88,10 @@ class EmbedService:
 
         embed.add_field(
             name=self.source_labels.get(metadata.source, "Source"),
-            value=(
-                metadata.author
-                if not metadata.author_url
-                else f"[{metadata.author}]({metadata.author_url})"
-            ),
+            value=(metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"),
             inline=False,
         )
-        embed.add_field(
-            name="Duration", value=self.format_duration(metadata.duration), inline=False
-        )
+        embed.add_field(name="Duration", value=self.format_duration(metadata.duration), inline=False)
 
         if metadata.likes is not None:
             embed.add_field(name="Likes :thumbsup:", value=metadata.likes, inline=False)
@@ -118,9 +100,7 @@ class EmbedService:
             embed.set_thumbnail(url=metadata.thumbnail_url)
 
         if metadata.filter_preset:
-            embed.add_field(
-                name="Filter", value=metadata.filter_preset.display_name, inline=False
-            )
+            embed.add_field(name="Filter", value=metadata.filter_preset.display_name, inline=False)
 
         embed.set_footer(text="Use /skip to skip or /queue to see what's next")
 
@@ -128,8 +108,8 @@ class EmbedService:
 
     def create_queue_embed(
         self,
-        queue_items: List[dict],
-        current_track: Optional[dict] = None,
+        queue_items: list[dict],
+        current_track: dict | None = None,
         page: int = 1,
         items_per_page: int = 5,
     ) -> discord.Embed:
@@ -138,11 +118,7 @@ class EmbedService:
 
         if current_track and current_track.get("metadata"):
             metadata = current_track["metadata"]
-            author_text = (
-                metadata.author
-                if not metadata.author_url
-                else f"[{metadata.author}]({metadata.author_url})"
-            )
+            author_text = metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"
             embed.add_field(
                 name="Currently Playing:",
                 value=f"[{metadata.title}]({metadata.webpage_url}) - {author_text}",
@@ -156,15 +132,9 @@ class EmbedService:
             embed.description = "The queue is empty! Use /play to add songs."
         else:
             queue_display = []
-            for i, item in enumerate(
-                queue_items[start_idx:end_idx], start=start_idx + 1
-            ):
+            for i, item in enumerate(queue_items[start_idx:end_idx], start=start_idx + 1):
                 metadata: AudioMetaData = item.get("metadata")
-                author_text = (
-                    metadata.author
-                    if not metadata.author_url
-                    else f"[{metadata.author}]({metadata.author_url})"
-                )
+                author_text = metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"
                 if metadata:
                     queue_display.append(
                         f"- **{i}.** [{metadata.title}]({metadata.webpage_url}) - {author_text}\n  - {self.format_duration(metadata.duration)}\n  - Requested by: **{metadata.requested_by}**"
@@ -175,9 +145,7 @@ class EmbedService:
             embed.add_field(name="Songs in Queue", value={len(queue_items)}, inline=False)
 
             total_pages = (len(queue_items) + items_per_page - 1) // items_per_page
-            embed.set_footer(
-                text=f"Page {page} / {total_pages}"
-            )
+            embed.set_footer(text=f"Page {page} / {total_pages}")
 
         return embed
 
@@ -185,22 +153,20 @@ class EmbedService:
         """Create an embed for displaying errors"""
         return discord.Embed(title="Error", description=error_message, color=0xE74C3C)
 
-    def create_success_embed(
-        self, message: str, title: str = "Success"
-    ) -> discord.Embed:
+    def create_success_embed(self, message: str, title: str = "Success") -> discord.Embed:
         """Create an embed for displaying success messages"""
         return discord.Embed(title=title, description=message, color=0x2ECC71)
-    
+
     def create_morning_embed(self, message: str, title: str = "🌅 Good Morning!") -> tuple[discord.Embed, str]:
         """Create an embed for morning messages"""
         embed = discord.Embed(title=title, description=message, color=0xF1C40F)
         embed.set_footer(text="Have a great day!")
         embed.timestamp = datetime.now()
-        
+
         # Select random emoji file
-        emoji_filename = random.choice(os.listdir(os.path.join(os.getcwd(), 'emojis')))
+        emoji_filename = random.choice(os.listdir(os.path.join(os.getcwd(), "emojis")))
         embed.set_thumbnail(url=f"attachment://{emoji_filename}")
-        
+
         return embed, emoji_filename
 
     @staticmethod
@@ -221,9 +187,7 @@ class EmbedService:
             parts.append(f"{int(hours)} {'hour' if hours == 1 else 'hours'}")
         if minutes > 0:
             parts.append(f"{int(minutes)} {'minute' if minutes == 1 else 'minutes'}")
-        if (
-            seconds > 0 or not parts
-        ):  # Always include seconds if it's the only component
+        if seconds > 0 or not parts:  # Always include seconds if it's the only component
             parts.append(f"{int(seconds)} {'second' if seconds == 1 else 'seconds'}")
 
         if len(parts) > 1:
@@ -242,9 +206,7 @@ class QueuePaginationView(discord.ui.View):
         self.embed_service = embed_service
         self.current_page = 1
         self.items_per_page = 5
-        self.total_pages = max(
-            1, (len(queue_items) + self.items_per_page - 1) // self.items_per_page
-        )
+        self.total_pages = max(1, (len(queue_items) + self.items_per_page - 1) // self.items_per_page)
 
         self.update_button_states()
 
@@ -253,9 +215,7 @@ class QueuePaginationView(discord.ui.View):
         self.next_button.disabled = self.current_page == self.total_pages
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.secondary, emoji="⬅️")
-    async def previous_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page = max(1, self.current_page - 1)
         self.update_button_states()
 
@@ -269,9 +229,7 @@ class QueuePaginationView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, emoji="➡️")
-    async def next_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page = min(self.total_pages, self.current_page + 1)
         self.update_button_states()
 

@@ -1,6 +1,8 @@
-import os
 import logging
+import os
+
 from discord import app_commands
+
 from bot import settings
 
 logger = logging.getLogger("bot")
@@ -13,11 +15,7 @@ class JunoSlash:
 
     async def load_commands(self, args=None):
         logger.info(f"📁 Looking for commangs in: {self.path}")
-        command_files = [
-            f[:-3]
-            for f in os.listdir(self.path)
-            if f.endswith(".py") and f not in ["__pycache__", "__init__.py"]
-        ]
+        command_files = [f[:-3] for f in os.listdir(self.path) if f.endswith(".py") and f not in ["__pycache__", "__init__.py"]]
 
         # Define the load function for a command
         def load_command(file_name):

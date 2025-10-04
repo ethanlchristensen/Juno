@@ -1,39 +1,35 @@
+import base64
+import json
+import logging
 import os
 import re
 import time
-import json
-import discord
-import logging
-import aiohttp
-import base64
 from collections import defaultdict
 
+import aiohttp
+import discord
 from discord.ext import commands
 
-from bot.utils import JunoSlash
 from bot.services import (
-    AiServiceFactory,
     AiOrchestrator,
-    ImageGenerationService,
-    EmbedService,
+    AiServiceFactory,
     AudioService,
-    MusicQueueService,
-    Message,
     Config,
+    EmbedService,
+    ImageGenerationService,
+    Message,
+    MusicQueueService,
 )
+from bot.utils import JunoSlash
 
 
 class Juno(commands.Bot):
     def __init__(self, intents, config: Config):
         status = discord.Status.invisible if config.invisible else discord.Status.online
-        super().__init__(
-            command_prefix="!", intents=intents, status=status, activity=None
-        )
+        super().__init__(command_prefix="!", intents=intents, status=status, activity=None)
         self.start_time = time.time()
         self.juno_slash = JunoSlash(self.tree)
-        self.ai_service = AiServiceFactory.get_service(
-            provider=config.aiConfig.preferredAiProvider, config=config
-        )
+        self.ai_service = AiServiceFactory.get_service(provider=config.aiConfig.preferredAiProvider, config=config)
         self.embed_service = EmbedService()
         self.audio_service = AudioService()
         self.music_queue_service = MusicQueueService(self)
@@ -47,11 +43,9 @@ class Juno(commands.Bot):
         self.logger = logging.getLogger(__name__)
 
         try:
-            with open(os.path.join(os.getcwd(), config.promptsPath), "r") as f:
+            with open(os.path.join(os.getcwd(), config.promptsPath)) as f:
                 self.prompts = json.load(f)
-                self.logger.info(
-                    f"Loaded {len(self.prompts)} prompts from prompts_path={config.promptsPath}"
-                )
+                self.logger.info(f"Loaded {len(self.prompts)} prompts from prompts_path={config.promptsPath}")
         except Exception as e:
             self.logger.error(f"Failed to load prompts from {config.promptsPath}: {e}")
             self.prompts = {}
@@ -64,11 +58,7 @@ class Juno(commands.Bot):
         cogs_dir = os.path.join(os.getcwd(), "bot", "cogs")
         self.logger.info(f"📁 Looking for cogs in: {cogs_dir}")
 
-        cog_files = [
-            f[:-3]
-            for f in os.listdir(cogs_dir)
-            if f.endswith(".py") and f != "__init__.py"
-        ]
+        cog_files = [f[:-3] for f in os.listdir(cogs_dir) if f.endswith(".py") and f != "__init__.py"]
 
         total = len(cog_files)
         loaded_successfully = 0
@@ -99,10 +89,8 @@ class Juno(commands.Bot):
         guild_count = len(self.guilds)
         user_count = sum(g.member_count for g in self.guilds)
 
-        self.logger.info(
-            f"🌐 Connected to {guild_count} guilds with access to {user_count} users"
-        )
-        self.logger.info(f"✅ Juno is online!")
+        self.logger.info(f"🌐 Connected to {guild_count} guilds with access to {user_count} users")
+        self.logger.info("✅ Juno is online!")
 
     async def on_message(self, message: discord.Message):
         # Early returns for invalid messages
@@ -121,18 +109,13 @@ class Juno(commands.Bot):
         # Update cooldown and log interaction
         self.user_cooldowns[message.author.id] = time.time()
         username = self.ids_to_users.get(str(message.author.id), message.author.name)
-        self.logger.info(
-            f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}"
-        )
+        self.logger.info(f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}")
         # Process and respond
         async with message.channel.typing():
             # Determine the intent
             is_replying_to_bot_image = False
             if reference_message and reference_message.author.id == self.user.id:
-                has_image = any(
-                    att.content_type and att.content_type.startswith("image/")
-                    for att in reference_message.attachments
-                )
+                has_image = any(att.content_type and att.content_type.startswith("image/") for att in reference_message.attachments)
                 is_replying_to_bot_image = has_image
 
             user_intent = await self.ai_orchestrator.detect_intent(
@@ -141,77 +124,40 @@ class Juno(commands.Bot):
             )
 
             if user_intent.intent == "chat":
-                self.logger.info(
-                    f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}"
-                )
-                messages = await self._build_message_context(
-                    message, reference_message, username
-                )
+                self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
+                messages = await self._build_message_context(message, reference_message, username)
                 response = await self.ai_service.chat(messages=messages)
                 await self._send_response(message, response.content)
             elif user_intent.intent == "image_generation":
                 # Check if the message has an IMAGE attachment
                 image_attachment = next(
-                    (
-                        att
-                        for att in message.attachments
-                        if att.content_type and att.content_type.startswith("image/")
-                    ),
+                    (att for att in message.attachments if att.content_type and att.content_type.startswith("image/")),
                     None,
                 )
 
                 # If no attachment, check if replying to a bot message with an image
-                if (
-                    not image_attachment
-                    and reference_message
-                    and reference_message.author.id == self.user.id
-                ):
+                if not image_attachment and reference_message and reference_message.author.id == self.user.id:
                     image_attachment = next(
-                        (
-                            att
-                            for att in reference_message.attachments
-                            if att.content_type
-                            and att.content_type.startswith("image/")
-                        ),
+                        (att for att in reference_message.attachments if att.content_type and att.content_type.startswith("image/")),
                         None,
                     )
                     if image_attachment:
-                        self.logger.info(
-                            f"Found image in referenced bot message: {image_attachment.filename}"
-                        )
+                        self.logger.info(f"Found image in referenced bot message: {image_attachment.filename}")
 
                 if image_attachment:
                     self.logger.info(f"Editing image: {image_attachment.filename}")
-                    image_generation_response = (
-                        await self.image_generation_service.edit_image_from_url(
-                            prompt=message.content, image_url=image_attachment.url
-                        )
+                    image_generation_response = await self.image_generation_service.edit_image_from_url(
+                        prompt=message.content, image_url=image_attachment.url
                     )
-                    image_bytes = self.image_generation_service.image_to_bytes(
-                        image=image_generation_response.generated_image
-                    )
+                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
                     image_file = discord.File(image_bytes, filename="edited_image.png")
-                    await self._send_response(
-                        message, image_generation_response.text_response, image_file
-                    )
+                    await self._send_response(message, image_generation_response.text_response, image_file)
                 else:
-                    self.logger.info(
-                        "No image attachment found, generating image with user prompt."
-                    )
-                    image_generation_response = (
-                        await self.image_generation_service.generate_image(
-                            prompt=message.content
-                        )
-                    )
-                    image_bytes = self.image_generation_service.image_to_bytes(
-                        image=image_generation_response.generated_image
-                    )
-                    image_file = discord.File(
-                        image_bytes, filename="generated_image.png"
-                    )
-                    await self._send_response(
-                        message, image_generation_response.text_response, image_file
-                    )
+                    self.logger.info("No image attachment found, generating image with user prompt.")
+                    image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
+                    image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
+                    image_file = discord.File(image_bytes, filename="generated_image.png")
+                    await self._send_response(message, image_generation_response.text_response, image_file)
 
     async def _get_reference_message(self, message: discord.Message):
         """Get the referenced message if this is a reply."""
@@ -229,9 +175,7 @@ class Juno(commands.Bot):
             return False
 
         bot_string = f"<@{self.user.id}>"
-        should_respond = bot_string in message.content or (
-            reference_message and reference_message.author.id == self.user.id
-        )
+        should_respond = bot_string in message.content or (reference_message and reference_message.author.id == self.user.id)
         return should_respond
 
     def _check_cooldown(self, user_id: int, username: str) -> bool:
@@ -245,9 +189,7 @@ class Juno(commands.Bot):
 
         if time_since_last < self.cooldown_duration:
             remaining_time = int(self.cooldown_duration - time_since_last)
-            self.logger.info(
-                f"⏰ Slow down! {username} is on cooldown for {remaining_time} seconds."
-            )
+            self.logger.info(f"⏰ Slow down! {username} is on cooldown for {remaining_time} seconds.")
             return False
 
         return True
@@ -263,16 +205,12 @@ class Juno(commands.Bot):
                             if resp.status == 200:
                                 img_bytes = await resp.read()
                                 img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                                images.append(
-                                    {"type": attachment.content_type, "data": img_b64}
-                                )
+                                images.append({"type": attachment.content_type, "data": img_b64})
                 except Exception as e:
                     self.logger.error(f"Failed to process image attachment: {e}")
         return images
 
-    async def _build_message_context(
-        self, message: discord.Message, reference_message, username: str
-    ) -> list:
+    async def _build_message_context(self, message: discord.Message, reference_message, username: str) -> list:
         """Build the message context for AI processing."""
         images = await self._process_message_images(message)
 
@@ -284,18 +222,12 @@ class Juno(commands.Bot):
 
         # Add reference message context if replying
         if reference_message:
-            ref_username = self.ids_to_users.get(
-                str(reference_message.author.id), reference_message.author.name
-            )
+            ref_username = self.ids_to_users.get(str(reference_message.author.id), reference_message.author.name)
             ref_content = self.replace_mentions(reference_message.content).strip()
-            messages.append(
-                Message(role="user", content=f"{ref_username} said:\n\n{ref_content}")
-            )
+            messages.append(Message(role="user", content=f"{ref_username} said:\n\n{ref_content}"))
 
         # Add current message
-        current_content = (
-            f"{username} says:\n\n" + self.replace_mentions(message.content).strip()
-        )
+        current_content = f"{username} says:\n\n" + self.replace_mentions(message.content).strip()
         messages.append(Message(role="user", content=current_content, images=images))
 
         return messages
@@ -329,9 +261,7 @@ class Juno(commands.Bot):
 
         return chunks
 
-    async def _send_response(
-        self, message: discord.Message, content: str, image_file: discord.File = None
-    ):
+    async def _send_response(self, message: discord.Message, content: str, image_file: discord.File = None):
         """Send the AI response, splitting if necessary."""
         processed_content = self._process_mentions_in_response(content)
         chunks = self._split_long_message(processed_content)

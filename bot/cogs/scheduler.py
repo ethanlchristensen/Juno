@@ -1,10 +1,12 @@
-import discord
-from discord.ext import commands, tasks
-from discord import app_commands
-from datetime import datetime, time, timezone
 import json
 import os
+from datetime import UTC, datetime
+
+import discord
 import pytz
+from discord import app_commands
+from discord.ext import commands, tasks
+
 from bot.services.ai.types import Message
 from bot.utils.decarators.admin_check import is_admin
 from bot.utils.decarators.command_logging import log_command_usage
@@ -26,7 +28,7 @@ class SchedulerCog(commands.Cog):
                 json.dump({}, f)
 
         try:
-            with open(configs_path, "r") as f:
+            with open(configs_path) as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             self.bot.logger.error(f"Error loading morning configs: {e}")
@@ -51,7 +53,7 @@ class SchedulerCog(commands.Cog):
         if not self.morning_configs:
             return
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
 
         for guild_id, config in self.morning_configs.items():
             try:
@@ -60,9 +62,7 @@ class SchedulerCog(commands.Cog):
                 try:
                     tz = pytz.timezone(guild_tz)
                 except pytz.exceptions.UnknownTimeZoneError:
-                    self.bot.logger.warning(
-                        f"Unknown timezone for guild {guild_id}: {guild_tz}, defaulting to UTC"
-                    )
+                    self.bot.logger.warning(f"Unknown timezone for guild {guild_id}: {guild_tz}, defaulting to UTC")
                     tz = pytz.UTC
 
                 # Get current time in the guild's timezone
@@ -70,26 +70,20 @@ class SchedulerCog(commands.Cog):
 
                 # Check if it's time to send the message
                 if (
-                    now_in_guild_tz.hour == config.get("hour", 12)
-                    and now_in_guild_tz.minute < config.get("minute", 0) + 1
+                    now_in_guild_tz.hour == config.get("hour", 12) and now_in_guild_tz.minute < config.get("minute", 0) + 1
                 ):  # 1-minute window to account for loop interval
-
                     channel_id = config.get("channel_id")
                     if not channel_id:
                         continue
 
                     guild = self.bot.get_guild(int(guild_id))
                     if not guild:
-                        self.bot.logger.warning(
-                            f"Could not find guild with ID {guild_id}"
-                        )
+                        self.bot.logger.warning(f"Could not find guild with ID {guild_id}")
                         continue
 
                     channel = guild.get_channel(int(channel_id))
                     if not channel:
-                        self.bot.logger.warning(
-                            f"Could not find channel {channel_id} in guild {guild.name}"
-                        )
+                        self.bot.logger.warning(f"Could not find channel {channel_id} in guild {guild.name}")
                         continue
 
                     # Generate motivational message
@@ -106,22 +100,14 @@ class SchedulerCog(commands.Cog):
 
                     response = await self.bot.ai_service.chat(messages=messages)
 
-                    embed, emoji_file = self.bot.embed_service.create_morning_embed(
-                        message=response.content
-                    )
+                    embed, emoji_file = self.bot.embed_service.create_morning_embed(message=response.content)
                     await channel.send(
                         embed=embed,
-                        file=discord.File(
-                            os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file
-                        ),
+                        file=discord.File(os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file),
                     )
-                    self.bot.logger.info(
-                        f"Sent morning message to {channel.name} in {guild.name}"
-                    )
+                    self.bot.logger.info(f"Sent morning message to {channel.name} in {guild.name}")
             except Exception as e:
-                self.bot.logger.error(
-                    f"Error sending morning message to guild {guild_id}: {e}"
-                )
+                self.bot.logger.error(f"Error sending morning message to guild {guild_id}: {e}")
 
     @check.before_loop
     async def before_check(self):
@@ -131,23 +117,17 @@ class SchedulerCog(commands.Cog):
         name="set_morning_channel",
         description="Set the morning message channel for this server",
     )
-    @app_commands.describe(
-        channel="The channel where morning messages will be sent (defaults to current channel)"
-    )
+    @app_commands.describe(channel="The channel where morning messages will be sent (defaults to current channel)")
     @log_command_usage()
     @is_admin()
-    async def set_morning_channel(
-        self, interaction: discord.Interaction, channel: discord.TextChannel = None
-    ):
+    async def set_morning_channel(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         """Set the morning message channel for this guild"""
         if channel is None:
             channel = interaction.channel
 
         # Get existing config or create new one
         guild_id = str(interaction.guild.id)
-        config = self.morning_configs.get(
-            guild_id, {"hour": 12, "minute": 0, "timezone": "UTC"}
-        )
+        config = self.morning_configs.get(guild_id, {"hour": 12, "minute": 0, "timezone": "UTC"})
 
         # Update channel
         config["channel_id"] = channel.id
@@ -162,9 +142,7 @@ class SchedulerCog(commands.Cog):
             ephemeral=True,
         )
 
-        self.bot.logger.info(
-            f"Set morning channel for {interaction.guild.name} to {channel.name}"
-        )
+        self.bot.logger.info(f"Set morning channel for {interaction.guild.name} to {channel.name}")
 
     @app_commands.command(
         name="set_morning_time",
@@ -187,20 +165,16 @@ class SchedulerCog(commands.Cog):
         """Set the time for morning messages"""
         # Validate input
         if hour < 0 or hour > 23:
-            await interaction.followup.send(
-                content="Hour must be between 0 and 23.", ephemeral=True
-            )
+            await interaction.followup.send(content="Hour must be between 0 and 23.", ephemeral=True)
             return
 
         if minute < 0 or minute > 59:
-            await interaction.followup.send(
-                content="Minute must be between 0 and 59.", ephemeral=True
-            )
+            await interaction.followup.send(content="Minute must be between 0 and 59.", ephemeral=True)
             return
 
         # Validate timezone
         try:
-            tz = pytz.timezone(timezone)
+            pytz.timezone(timezone)
         except pytz.exceptions.UnknownTimeZoneError:
             await interaction.followup.send(
                 content=f"Unknown timezone: '{timezone}'. Please use a valid timezone like 'US/Eastern' or 'Europe/London'.",
@@ -235,9 +209,7 @@ class SchedulerCog(commands.Cog):
                 ephemeral=True,
             )
 
-        self.bot.logger.info(
-            f"Set morning time for {interaction.guild.name} to {hour}:{minute:02d} {timezone}"
-        )
+        self.bot.logger.info(f"Set morning time for {interaction.guild.name} to {hour}:{minute:02d} {timezone}")
 
     @app_commands.command(
         name="remove_morning_channel",
@@ -250,25 +222,19 @@ class SchedulerCog(commands.Cog):
         if interaction.guild.id in self.morning_configs:
             del self.morning_configs[interaction.guild.id]
             self._save_morning_configs()
-            await interaction.followup.send(
-                content="Morning messages disabled for this server.", ephemeral=True
-            )
+            await interaction.followup.send(content="Morning messages disabled for this server.", ephemeral=True)
         else:
             await interaction.followup.send(
                 content="Morning messages are not configured for this server.",
                 ephemeral=True,
             )
 
-    @app_commands.command(
-        name="test_morning", description="Test the morning message functionality"
-    )
+    @app_commands.command(name="test_morning", description="Test the morning message functionality")
     @log_command_usage()
     @is_admin()
     async def test_morning_message(self, interaction: discord.Interaction):
         """Test the morning message functionality"""
-        await interaction.followup.send(
-            content="Sending test morning message...", ephemeral=True
-        )
+        await interaction.followup.send(content="Sending test morning message...", ephemeral=True)
 
         try:
             # Generate motivational message
@@ -285,19 +251,13 @@ class SchedulerCog(commands.Cog):
 
             response = await self.bot.ai_service.chat(messages=messages)
 
-            embed, emoji_file = self.bot.embed_service.create_morning_embed(
-                message=response.content
-            )
+            embed, emoji_file = self.bot.embed_service.create_morning_embed(message=response.content)
 
             await interaction.channel.send(
                 embed=embed,
-                file=discord.File(
-                    os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file
-                ),
+                file=discord.File(os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file),
             )
-            self.bot.logger.info(
-                f"Sent test morning message to {interaction.channel.name} in {interaction.guild.name}"
-            )
+            self.bot.logger.info(f"Sent test morning message to {interaction.channel.name} in {interaction.guild.name}")
 
         except Exception as e:
             await interaction.followup.send(f"Error testing morning message: {e}")

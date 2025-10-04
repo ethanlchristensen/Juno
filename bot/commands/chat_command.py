@@ -1,5 +1,4 @@
 import discord
-
 from discord import app_commands
 
 from bot.services import AIChatResponse, Message
@@ -13,8 +12,6 @@ class ChatCommand(app_commands.Command):
         async def chat(interaction: discord.Interaction, message: str):
             await interaction.response.defer(ephemeral=False)
 
-            response: AIChatResponse = await interaction.client.ai_service.chat(
-                messages=[Message(role="user", content=message)]
-            )
+            response: AIChatResponse = await interaction.client.ai_service.chat(messages=[Message(role="user", content=message)])
 
             await interaction.followup.send(response.content)

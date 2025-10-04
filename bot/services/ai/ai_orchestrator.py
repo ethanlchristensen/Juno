@@ -1,28 +1,20 @@
-import os
 import logging
-from typing import Literal, Optional
-from pydantic import BaseModel, Field
 
 from bot.services import AiServiceFactory
-from .types import Message, UserIntent
+
 from ..config_service import Config
+from .types import Message, UserIntent
 
 logger = logging.getLogger(__name__)
 
 
 class AiOrchestrator:
     def __init__(self, config: Config):
-        self.ai_service = AiServiceFactory.get_service(
-            provider=config.aiConfig.orchestrator.preferredAiProvider, config=config
-        )
+        self.ai_service = AiServiceFactory.get_service(provider=config.aiConfig.orchestrator.preferredAiProvider, config=config)
         self.model = config.aiConfig.orchestrator.preferredModel
-        logger.info(
-            f"Initialized AiOrchestrator with provider={config.aiConfig.orchestrator.preferredAiProvider}, model={self.model}"
-        )
+        logger.info(f"Initialized AiOrchestrator with provider={config.aiConfig.orchestrator.preferredAiProvider}, model={self.model}")
 
-    async def detect_intent(
-        self, user_message: str, is_replying_to_bot_image: bool = False
-    ) -> UserIntent:
+    async def detect_intent(self, user_message: str, is_replying_to_bot_image: bool = False) -> UserIntent:
         """
         Detect if the user wants to chat or generate an image.
 
@@ -58,18 +50,12 @@ Everything else is chat.{context_note}"""
         ]
 
         try:
-            intent = await self.ai_service.chat_with_schema(
-                messages=messages, schema=UserIntent, model=self.model
-            )
+            intent = await self.ai_service.chat_with_schema(messages=messages, schema=UserIntent, model=self.model)
 
-            logger.info(
-                f"Detected intent: {intent.intent} (replying_to_image={is_replying_to_bot_image})"
-            )
+            logger.info(f"Detected intent: {intent.intent} (replying_to_image={is_replying_to_bot_image})")
             return intent
 
         except Exception as e:
             logger.error(f"Error detecting intent: {e}")
             # Default to chat on error
-            return UserIntent(
-                intent="chat", reasoning="Fallback due to error in intent detection"
-            )
+            return UserIntent(intent="chat", reasoning="Fallback due to error in intent detection")

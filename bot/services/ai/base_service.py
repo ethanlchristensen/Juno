@@ -1,28 +1,22 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
-from typing import List, Dict, TypeVar, Optional, Type
 from abc import ABC, abstractmethod
+from typing import TypeVar
+
 from pydantic import BaseModel
 
-
-from .types import Message, AIChatResponse
+from .types import AIChatResponse, Message
 
 T = TypeVar("T", bound=BaseModel)
 
+logger = logging.getLogger(__name__)
 
 class BaseService(ABC):
     @abstractmethod
-    async def chat(
-        self, model: str, messages: List[Dict[str, str]], **kwargs
-    ) -> AIChatResponse:
+    async def chat(self, model: str, messages: list[dict[str, str]], **kwargs) -> AIChatResponse:
         pass
 
     @abstractmethod
-    async def chat_with_schema(
-        self, messages: List[Message], schema: Type[T], model: Optional[str] = None
-    ) -> T:
+    async def chat_with_schema(self, messages: list[Message], schema: type[T], model: str | None = None) -> T:
         """
         Sends a chat request with structured output based on a Pydantic schema.
 
@@ -58,9 +52,7 @@ class BaseService(ABC):
                 mapped_message["content"].extend(
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{image['type']};base64,{image['data']}"
-                        },
+                        "image_url": {"url": f"data:{image['type']};base64,{image['data']}"},
                     }
                     for image in message.images
                 )

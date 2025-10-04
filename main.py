@@ -1,10 +1,10 @@
-import discord
 import logging
+
+import discord
 
 from bot import settings
 from bot.juno import Juno
 from bot.services import get_config_service
-
 
 logger = logging.getLogger("bot")
 

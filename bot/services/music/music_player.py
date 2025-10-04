@@ -1,9 +1,9 @@
-import time
-import discord
-import logging
 import asyncio
+import logging
+import time
+from typing import TYPE_CHECKING
 
-from typing import Optional, TYPE_CHECKING
+import discord
 
 from .types import FilterPreset
 
@@ -19,7 +19,7 @@ class MusicPlayer:
         self.voice_client: discord.VoiceClient = None
         self.next = asyncio.Event()
         self.current = None
-        self.text_channel: Optional[discord.TextChannel] = None
+        self.text_channel: discord.TextChannel | None = None
         self.play_start_time = None
         self.paused_at = None
         self.is_playing = False
@@ -49,7 +49,7 @@ class MusicPlayer:
                         self.logger.info("[PLAY_LOOP] Queue is empty — waiting up to 300s for new song.")
                         self.current = await asyncio.wait_for(self.queue.get(), timeout=300)
                         self.logger.info(f"[PLAY_LOOP] Got song after waiting: {self.current['metadata'].title}")
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         self.logger.info("[PLAY_LOOP] Timed out waiting for song. Retrying...")
                         await asyncio.sleep(1)
                         continue
@@ -74,8 +74,8 @@ class MusicPlayer:
 
                 current_track = self.current
 
-                def _after_play(err):
-                    if self.current == current_track:
+                def _after_play(err, track=current_track):
+                    if self.current == track:
                         self.bot.loop.call_soon_threadsafe(self._song_finished)
 
                 self.voice_client.play(source, after=_after_play)
@@ -84,9 +84,7 @@ class MusicPlayer:
                 self.paused_at = None
 
                 if self.text_channel:
-                    embed = self.bot.embed_service.create_now_playing_embed(
-                        self.current["metadata"]
-                    )
+                    embed = self.bot.embed_service.create_now_playing_embed(self.current["metadata"])
                     await self.text_channel.send(embed=embed)
 
                 await self.next.wait()
@@ -94,6 +92,7 @@ class MusicPlayer:
             except Exception as e:
                 self.logger.error(f"[PLAY_LOOP] Exception during playback: {e}")
                 import traceback
+
                 traceback.print_exc()
                 self.is_playing = False
                 await asyncio.sleep(1)
@@ -115,9 +114,7 @@ class MusicPlayer:
             self.text_channel = text_channel
 
         self.logger.info(f"[ENQUEUE] Adding song to queue: {metadata.title}")
-        await self.queue.put(
-            {"url": url, "metadata": metadata, "filter_preset": filter_preset}
-        )
+        await self.queue.put({"url": url, "metadata": metadata, "filter_preset": filter_preset})
 
     async def skip(self) -> bool:
         """Skip the currently playing song"""
@@ -153,31 +150,26 @@ class MusicPlayer:
             # Need to restart from a specific position
             # Set manual_stop flag to prevent queue advancing
             self.manual_stop = True
-            
+
             # Create new source at the paused position
             audio_service = self.bot.audio_service
             url = self.current["url"]
             filter_preset = self.current.get("filter_preset")
-            
-            source = audio_service.get_audio_source(
-                url, filter_preset, position=self.paused_at
-            )
-            
+
+            source = audio_service.get_audio_source(url, filter_preset, position=self.paused_at)
+
             # Stop and restart
             if self.voice_client.is_playing():
                 self.voice_client.stop()
-                
-            self.voice_client.play(
-                source, 
-                after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished)
-            )
-            
+
+            self.voice_client.play(source, after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished))
+
             self.play_start_time = time.time() - self.paused_at
             self.paused_at = None
             self.is_playing = True
             return True
         return False
-    
+
     async def set_filter(self, new_filter: FilterPreset) -> bool:
         """Apply a filter to the current song without advancing the queue
 
@@ -193,101 +185,95 @@ class MusicPlayer:
         if self.voice_client and (self.voice_client.is_playing() or self.voice_client.is_paused()):
             # Set the manual_stop flag to prevent queue advancement
             self.manual_stop = True
-            
+
             # Calculate current position
             if self.voice_client.is_paused() and self.paused_at is not None:
                 elapsed = self.paused_at
             else:
                 elapsed = time.time() - self.play_start_time if self.play_start_time else 0
-            
+
             # Remember if it was paused
             was_paused = self.voice_client.is_paused()
-            
+
             # Stop current playback but don't advance queue
             self.voice_client.stop()
-            
+
             # Update filter in current track
             self.current["filter_preset"] = new_filter
-            
+
             # Create new source with updated filter and position
             url = self.current["url"]
             audio_service = self.bot.audio_service
             source = audio_service.get_audio_source(url, new_filter, position=elapsed)
-            
+
             # Play with the new filter
-            self.voice_client.play(
-                source, 
-                after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished)
-            )
-            
+            self.voice_client.play(source, after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished))
+
             # Update timing info
             self.play_start_time = time.time() - elapsed
-            
+
             # If it was paused before, pause it again (i.e. can change the filter when the audio is paused)
             if was_paused:
                 self.voice_client.pause()
                 self.paused_at = elapsed
             else:
                 self.paused_at = None
-            
+
             return True
         return False
-    
+
     async def seek(self, position_seconds: int) -> bool:
         """
         Seek to a specified position in the current song
-        
+
         Args:
             position_seconds: Position in seconds to seek to
-            
+
         Returns:
             bool: True if succeeded, False otherwise
         """
         if not self.current:
             self.logger.info("[SEEK] No current track to seek in")
             return False
-            
+
         if not self.voice_client or not (self.voice_client.is_playing() or self.voice_client.is_paused()):
             self.logger.info("[SEEK] Voice client not playing")
             return False
-        
+
         # Validate the position is within the song duration
         duration = self.current["metadata"].duration
         if duration and position_seconds > duration:
             self.logger.info(f"[SEEK] Requested position {position_seconds}s exceeds song duration {duration}s")
             return False
-        
+
         # Set the manual_stop flag to prevent queue advancement
         self.manual_stop = True
-        
+
         # Remember if it was paused
         was_paused = self.voice_client.is_paused()
-        
+
         # Stop current playback but don't advance queue
         self.voice_client.stop()
-        
+
         # Create new source at the requested position
         url = self.current["url"]
         filter_preset = self.current.get("filter_preset")
         audio_service = self.bot.audio_service
-        
+
         self.logger.info(f"[SEEK] Seeking to position {position_seconds}s in: {self.current['metadata'].title}")
         source = audio_service.get_audio_source(url, filter_preset, position=position_seconds)
-        
+
         # Play with the new position
-        self.voice_client.play(
-            source, 
-            after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished)
-        )
-        
+        self.voice_client.play(source, after=lambda e: self.bot.loop.call_soon_threadsafe(self._song_finished))
+
         # Update timing info
         self.play_start_time = time.time() - position_seconds
-        
+
         # If it was paused before, pause it again
         if was_paused:
             self.voice_client.pause()
             self.paused_at = position_seconds
         else:
             self.paused_at = None
-        
+
         return True

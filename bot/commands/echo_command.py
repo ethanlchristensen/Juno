@@ -1,9 +1,8 @@
 import discord
-from typing import Optional
 from discord import app_commands
 
-from bot.utils.decarators.command_logging import log_command_usage
 from bot.utils.decarators.admin_check import is_admin
+from bot.utils.decarators.command_logging import log_command_usage
 
 
 class EchoCommand(app_commands.Command):
@@ -16,8 +15,8 @@ class EchoCommand(app_commands.Command):
         @is_admin()
         async def echo(
             interaction: discord.Interaction,
-            message: Optional[str] = None,
-            attachment: Optional[discord.Attachment] = None,
+            message: str | None = None,
+            attachment: discord.Attachment | None = None,
         ):
             channel = interaction.channel
             # Prevent error if both message and attachment are missing
@@ -29,8 +28,6 @@ class EchoCommand(app_commands.Command):
                 return
 
             if attachment:
-                await channel.send(
-                    content=message or "", file=await attachment.to_file()
-                )
+                await channel.send(content=message or "", file=await attachment.to_file())
             else:
                 await channel.send(content=message)

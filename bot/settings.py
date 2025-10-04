@@ -1,10 +1,10 @@
 import logging
 from logging.config import dictConfig
-from rich.logging import RichHandler
+
 from rich.console import Console
-from rich.theme import Theme
 from rich.panel import Panel
 from rich.text import Text
+from rich.theme import Theme
 
 # Create a custom theme for Rich
 custom_theme = Theme(
@@ -102,10 +102,6 @@ def load_components(items, load_function, component_type="component"):
 
     # Log the final summary
     if loaded_successfully == total:
-        logger.info(
-            f"🎉 All {loaded_successfully} {component_type}s loaded successfully!"
-        )
+        logger.info(f"🎉 All {loaded_successfully} {component_type}s loaded successfully!")
     else:
-        logger.info(
-            f"📊 {component_type.capitalize()}s loaded: {loaded_successfully}/{total}"
-        )
+        logger.info(f"📊 {component_type.capitalize()}s loaded: {loaded_successfully}/{total}")

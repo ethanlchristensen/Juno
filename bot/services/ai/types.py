@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import Dict, List, Union, Literal, Optional, Any, ClassVar
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass
 from enum import Enum
+from typing import Any, Literal
+
 from PIL.Image import Image as PILImage
+from pydantic import BaseModel, Field
 
 
 class Role(str, Enum):
@@ -20,11 +21,11 @@ class Image:
 class Message:
     role: Role
     content: str
-    images: Optional[List[Image]] = None
-    name: Optional[str] = None
+    images: list[Image] | None = None
+    name: str | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Message":
+    def from_dict(cls, data: dict[str, Any]) -> "Message":
         return cls(
             role=data["role"],
             content=data["content"],
@@ -32,7 +33,7 @@ class Message:
             images=data.get("images", []),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {"role": self.role, "content": self.content}
         if self.name:
             result["name"] = self.name
@@ -46,21 +47,21 @@ class AIChatResponse:
     model: str
     content: str
     raw_response: Any
-    usage: Optional[Dict[str, int]] = None
+    usage: dict[str, int] | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AIChatResponse":
+    def from_dict(cls, data: dict[str, Any]) -> "AIChatResponse":
         return cls(**data)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass
 class AIServiceConfig:
-    host: Optional[str] = None
-    api_key: Optional[str] = None
-    model: Optional[str] = None
+    host: str | None = None
+    api_key: str | None = None
+    model: str | None = None
 
 
 class UserIntent(BaseModel):
@@ -70,9 +71,7 @@ class UserIntent(BaseModel):
         description="The user's intent: chat for conversation or image_generation for creating images"
     )
 
-    reasoning: str = Field(
-        description="Brief explanation of why this intent was chosen"
-    )
+    reasoning: str = Field(description="Brief explanation of why this intent was chosen")
 
 
 @dataclass

@@ -1,9 +1,8 @@
 import discord
-from typing import Optional
 from discord import app_commands
 
-from bot.utils.decarators.command_logging import log_command_usage
 from bot.utils.decarators.admin_check import is_admin
+from bot.utils.decarators.command_logging import log_command_usage
 
 
 class ReplyCommand(app_commands.Command):
@@ -17,8 +16,8 @@ class ReplyCommand(app_commands.Command):
         async def reply(
             interaction: discord.Interaction,
             message_id: str,
-            message: Optional[str] = None,
-            attachment: Optional[discord.Attachment] = None,
+            message: str | None = None,
+            attachment: discord.Attachment | None = None,
         ):
             channel = interaction.channel
 
@@ -57,6 +56,4 @@ class ReplyCommand(app_commands.Command):
                 )
                 await interaction.followup.send("Reply sent!", ephemeral=True)
             except Exception as e:
-                await interaction.followup.send(
-                    f"An error occurred: {e}", ephemeral=True
-                )
+                await interaction.followup.send(f"An error occurred: {e}", ephemeral=True)

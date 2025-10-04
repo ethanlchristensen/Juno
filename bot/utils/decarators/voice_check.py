@@ -1,9 +1,10 @@
-import os
-import json
 import functools
+import json
+import os
+from collections.abc import Awaitable, Callable
+from typing import ParamSpec, TypeVar, cast
+
 import discord
-from discord import app_commands
-from typing import Callable, TypeVar, ParamSpec, Awaitable, cast, Any
 
 P = ParamSpec("P")
 T = TypeVar("T")

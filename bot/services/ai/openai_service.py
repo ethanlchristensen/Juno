@@ -1,13 +1,12 @@
-import os
-import openai
 import logging
-from typing import List, Optional, Any, TypeVar, Optional, Type
+from typing import TypeVar
+
+import openai
 from pydantic import BaseModel
 
-
-from .base_service import BaseService
-from .types import Message, AIChatResponse, AIServiceConfig
 from ..config_service import Config
+from .base_service import BaseService
+from .types import AIChatResponse, Message
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -17,25 +16,17 @@ class OpenAIService(BaseService):
         self.logger = logging.getLogger(__name__)
         self.client = openai.Client(api_key=config.aiConfig.openai.apiKey)
         self.default_model = config.aiConfig.openai.preferredModel
-        self.logger.info(
-            f"Intializing OpenAIService with default_model={self.default_model}"
-        )
+        self.logger.info(f"Intializing OpenAIService with default_model={self.default_model}")
 
-    async def chat(
-        self, messages: List[Message], model: Optional[str] = None
-    ) -> AIChatResponse:
+    async def chat(self, messages: list[Message], model: str | None = None) -> AIChatResponse:
         try:
             model_to_use = model or self.default_model
 
-            openai_messages = [
-                self.map_message_to_provider(message, "openai") for message in messages
-            ]
+            openai_messages = [self.map_message_to_provider(message, "openai") for message in messages]
 
             self.logger.info(f"Calling OpenAIService.chat() with model={model_to_use}")
 
-            raw_response = self.client.chat.completions.create(
-                model=model_to_use, messages=openai_messages
-            )
+            raw_response = self.client.chat.completions.create(model=model_to_use, messages=openai_messages)
 
             return AIChatResponse(
                 model=model_to_use,
@@ -51,19 +42,13 @@ class OpenAIService(BaseService):
             self.logger.error(f"Error in OpenAIService.chat(): {e}")
             return {}
 
-    async def chat_with_schema(
-        self, messages: List[Message], schema: Type[T], model: Optional[str] = None
-    ) -> T:
+    async def chat_with_schema(self, messages: list[Message], schema: type[T], model: str | None = None) -> T:
         try:
             model_to_use = model or self.default_model
 
-            openai_messages = [
-                self.map_message_to_provider(message, "openai") for message in messages
-            ]
+            openai_messages = [self.map_message_to_provider(message, "openai") for message in messages]
 
-            self.logger.info(
-                f"Calling OpenAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}"
-            )
+            self.logger.info(f"Calling OpenAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}")
 
             raw_response = self.client.beta.chat.completions.parse(
                 model=model_to_use,

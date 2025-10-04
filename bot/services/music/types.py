@@ -1,6 +1,7 @@
-from typing import Dict, List, Union, Literal, Optional, Any
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any
+
 from discord import app_commands
 
 
@@ -53,19 +54,15 @@ class FilterPreset(Enum):
     PITCH_DOWN = ("pitch_down", "Pitch Down", "asetrate=48000*0.8,aresample=48000,atempo=1.25")
     EIGHT_BIT = ("8bit", "8-Bit", "aresample=8000:resampler=soxr,aresample=48000:resampler=soxr")
 
-
-    def __init__(self, value: str, display_name: str, ffmpeg_filter: Optional[str]):
+    def __init__(self, value: str, display_name: str, ffmpeg_filter: str | None):
         self._value_ = value
         self.display_name = display_name
         self.ffmpeg_filter = ffmpeg_filter
 
     @classmethod
-    def get_choices(cls) -> List[app_commands.Choice[str]]:
+    def get_choices(cls) -> list[app_commands.Choice[str]]:
         """Convert the enum members to app_commands.Choice objects for use with slash commands"""
-        return [
-            app_commands.Choice(name=preset.display_name, value=preset.value)
-            for preset in cls
-        ]
+        return [app_commands.Choice(name=preset.display_name, value=preset.value) for preset in cls]
 
     @classmethod
     def from_value(cls, value: str) -> "FilterPreset":
@@ -84,19 +81,15 @@ class AudioMetaData:
     duration: int
     url: str
     webpage_url: str
-    thumbnail_url: Optional[str] = None
+    thumbnail_url: str | None = None
     source: AudioSource = AudioSource.YOUTUBE
-    likes: Optional[int] = None
-    filter_preset: Optional[FilterPreset] = FilterPreset.NONE
-    requested_by: Optional[str] = None
+    likes: int | None = None
+    filter_preset: FilterPreset | None = FilterPreset.NONE
+    requested_by: str | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AudioMetaData":
-        filter_preset = (
-            FilterPreset(data.get("filter_preset", "none"))
-            if data.get("filter_preset")
-            else FilterPreset.NONE
-        )
+    def from_dict(cls, data: dict[str, Any]) -> "AudioMetaData":
+        filter_preset = FilterPreset(data.get("filter_preset", "none")) if data.get("filter_preset") else FilterPreset.NONE
 
         return cls(
             title=data["title"],
@@ -109,10 +102,10 @@ class AudioMetaData:
             source=AudioSource(data.get("source", "youtube")),
             likes=data.get("likes"),
             filter_preset=filter_preset,
-            requested_by=data["requested_by"]
+            requested_by=data["requested_by"],
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "title": self.title,
             "author": self.author,
@@ -124,5 +117,5 @@ class AudioMetaData:
             "source": self.source.value,
             "likes": self.likes,
             "filter_preset": self.filter_preset.value if self.filter_preset else None,
-            "requested_by": self.requested_by
+            "requested_by": self.requested_by,
         }

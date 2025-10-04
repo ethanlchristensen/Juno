@@ -1,14 +1,13 @@
-from google.genai import Client
-from google.genai import types
-from PIL import Image
-from io import BytesIO
-from typing import Optional
-import logging
-import aiohttp
 import asyncio
+import logging
+from io import BytesIO
 
-from .types import ImageGenerationResponse
+import aiohttp
+from google.genai import Client
+from PIL import Image
+
 from ..config_service import Config
+from .types import ImageGenerationResponse
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +24,11 @@ class ImageGenerationService:
         """
         self.client = Client(api_key=config.aiConfig.gemini.apiKey)
         self.model = model
-        self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
+        self.base_prompt = (
+            "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
+        )
 
-    async def download_image_from_url(self, url: str) -> Optional[Image.Image]:
+    async def download_image_from_url(self, url: str) -> Image.Image | None:
         """
         Download an image from a URL.
 
@@ -91,9 +92,7 @@ class ImageGenerationService:
             logger.error(f"Error generating image: {e}", exc_info=True)
             return None
 
-    async def edit_image(
-        self, prompt: str, source_image: Image.Image
-    ) -> ImageGenerationResponse:
+    async def edit_image(self, prompt: str, source_image: Image.Image) -> ImageGenerationResponse:
         """
         Edit an existing image based on a text prompt.
 
@@ -132,9 +131,7 @@ class ImageGenerationService:
             logger.error(f"Error editing image: {e}", exc_info=True)
             return None
 
-    async def edit_image_from_url(
-        self, prompt: str, image_url: str
-    ) -> ImageGenerationResponse:
+    async def edit_image_from_url(self, prompt: str, image_url: str) -> ImageGenerationResponse:
         """
         Download and edit an image from a URL.
 

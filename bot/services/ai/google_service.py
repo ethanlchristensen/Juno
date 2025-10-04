@@ -1,15 +1,12 @@
-import os
 import logging
-from typing import List, Dict, Optional, Type, TypeVar, Optional
+from typing import TypeVar
+
+from google.genai import Client
 from pydantic import BaseModel
 
-from google import genai
-from google.genai import types
-from google.genai import Client
-
-from .base_service import BaseService
-from .types import Message, AIChatResponse, AIServiceConfig
 from ..config_service import Config
+from .base_service import BaseService
+from .types import AIChatResponse, Message
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -31,11 +28,9 @@ class GoogleAIService(BaseService):
 
         self.client = Client(api_key=config.aiConfig.gemini.apiKey)
         self.default_model = config.aiConfig.gemini.preferredModel
-        self.logger.info(
-            f"Intializing GoogleAIService with default_model={self.default_model}"
-        )
+        self.logger.info(f"Intializing GoogleAIService with default_model={self.default_model}")
 
-    async def chat(self, messages: List[Message], model: Optional[str] = None) -> Dict:
+    async def chat(self, messages: list[Message], model: str | None = None) -> dict:
         """
         Sends a chat request to the Google AI API.
 
@@ -48,23 +43,15 @@ class GoogleAIService(BaseService):
             Dict: API response containing chat completion data.
         """
         if not self.client:
-            return {
-                "error": "GoogleAI Service is not initialized. Please set the GEMINI_API_KEY."
-            }
+            return {"error": "GoogleAI Service is not initialized. Please set the GEMINI_API_KEY."}
 
         try:
             model_to_use = model or self.default_model
 
-            gemini_messages = [
-                self.map_message_to_provider(message, "google") for message in messages
-            ]
-            self.logger.info(
-                f"Calling GoogleAIService.chat() with model={model_to_use}"
-            )
+            gemini_messages = [self.map_message_to_provider(message, "google") for message in messages]
+            self.logger.info(f"Calling GoogleAIService.chat() with model={model_to_use}")
 
-            raw_response = self.client.models.generate_content(
-                model=model_to_use, contents=gemini_messages
-            )
+            raw_response = self.client.models.generate_content(model=model_to_use, contents=gemini_messages)
 
             return AIChatResponse(
                 model=model_to_use,
@@ -81,24 +68,16 @@ class GoogleAIService(BaseService):
                 usage={},
             )
 
-    async def chat_with_schema(
-        self, messages: List[Message], schema: Type[T], model: Optional[str] = None
-    ) -> T:
+    async def chat_with_schema(self, messages: list[Message], schema: type[T], model: str | None = None) -> T:
         if not self.client:
-            return {
-                "error": "GoogleAI Service is not initialized. Please set the GEMINI_API_KEY."
-            }
+            return {"error": "GoogleAI Service is not initialized. Please set the GEMINI_API_KEY."}
 
         try:
             model_to_use = model or self.default_model
 
-            gemini_messages = [
-                self.map_message_to_provider(message, "google") for message in messages
-            ]
+            gemini_messages = [self.map_message_to_provider(message, "google") for message in messages]
 
-            self.logger.info(
-                f"Calling GoogleAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}"
-            )
+            self.logger.info(f"Calling GoogleAIService.chat_with_schema() with model={model_to_use} and schema={schema.__name__}")
 
             raw_response = self.client.models.generate_content(
                 model=model_to_use,

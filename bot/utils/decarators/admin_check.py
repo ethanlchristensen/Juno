@@ -1,9 +1,11 @@
-import os
 import json
-import discord
 import logging
+import os
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Callable, TypeVar, ParamSpec, Awaitable, cast
+from typing import ParamSpec, TypeVar, cast
+
+import discord
 
 from bot.services.embed_service import EmbedService
 
@@ -40,21 +42,13 @@ def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]
                 if interaction.user.id in admin_list:
                     return await func(*args, **kwargs)
                 else:
-                    logger.warning(
-                        f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command."
-                    )
-                    embed = embed_service.create_error_embed(
-                        error_message="You don't have permission to use this command."
-                    )
+                    logger.warning(f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command.")
+                    embed = embed_service.create_error_embed(error_message="You don't have permission to use this command.")
                     await interaction.followup.send(embed=embed, ephemeral=True)
                     return cast(T, None)
             except json.JSONDecodeError:
-                logger.error(
-                    f"Failed to parse ADMINS environment variable: {admin_list_str}"
-                )
-                await interaction.followup.send(
-                    "An error occurred while checking permissions.", ephemeral=True
-                )
+                logger.error(f"Failed to parse ADMINS environment variable: {admin_list_str}")
+                await interaction.followup.send("An error occurred while checking permissions.", ephemeral=True)
                 return cast(T, None)
 
         return wrapper

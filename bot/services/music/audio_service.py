@@ -1,10 +1,10 @@
-import os
-import yt_dlp
-import discord
 import logging
-
-from typing import Optional, Dict, Any, Union
+import os
+from typing import Any
 from urllib.parse import urlparse
+
+import discord
+import yt_dlp
 
 from .types import AudioMetaData, AudioSource, FilterPreset
 
@@ -26,7 +26,7 @@ class AudioService:
         media_extensions = [".mov", ".mp4", ".mp3", ".wav", ".ogg", ".m4a", ".webm"]
         return any(path.endswith(ext) for ext in media_extensions)
 
-    def extract_info(self, query: str) -> Dict[str, Any]:
+    def extract_info(self, query: str) -> dict[str, Any]:
         if query.startswith("http") and self.is_direct_media_url(query):
             parsed_url = urlparse(query)
             filename = os.path.basename(parsed_url.path)
@@ -67,15 +67,13 @@ class AudioService:
     def get_audio_source(
         self,
         url: str,
-        filter_preset: Optional[FilterPreset] = None,
+        filter_preset: FilterPreset | None = None,
         position: float = 0,
     ) -> discord.FFmpegPCMAudio:
         before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 
         if position > 0:
-            self.logger.info(
-                "Recieved position when getting audio source. Attempting to seek to position."
-            )
+            self.logger.info("Recieved position when getting audio source. Attempting to seek to position.")
             options = f"-vn -ss {position}"
         else:
             options = "-vn"
@@ -84,11 +82,9 @@ class AudioService:
             if ffmpeg_filter := filter_preset.ffmpeg_filter:
                 options += f" -af {ffmpeg_filter}"
 
-        return discord.FFmpegPCMAudio(
-            url, before_options=before_options, options=options
-        )
+        return discord.FFmpegPCMAudio(url, before_options=before_options, options=options)
 
-    def get_metadata(self, info: Dict[str, Any]) -> AudioMetaData:
+    def get_metadata(self, info: dict[str, Any]) -> AudioMetaData:
         source_type = AudioSource.YOUTUBE
 
         if info.get("_direct_url"):
