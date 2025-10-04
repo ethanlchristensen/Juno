@@ -6,10 +6,10 @@ on:
       - main
 
 jobs:
-  deploy:
-    # Target your self-hosted runner by its labels
+  deploy-dev:
     runs-on: [self-hosted, linux, arm64, EPIC]
-
+    environment: development
+    
     steps:
       - name: Verify Current Directory
         run: |
@@ -18,31 +18,45 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
-        # This checks out the code into the runner's workspace on the Pi
 
       - name: Checkout Secrets Dev
         run: cp /home/ethan/source/repos/Juno/development.config.json ./development.config.json
+      - name: Checkout Prompts
+        run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
+
+      - name: Deploy Dev with Docker Compose
+        run: |
+          echo "Stopping existing dev services (if any)..."
+          docker compose down juno-dev --remove-orphans || true
+          echo "Building and starting dev services..."
+          docker compose up -d --build juno-dev
+          echo "Cleaning up old Docker images..."
+          docker image prune -af
+
+  deploy-prod:
+    runs-on: [self-hosted, linux, arm64, EPIC]
+    environment: production
+    needs: deploy-dev
+    
+    steps:
+      - name: Verify Current Directory
+        run: |
+          echo "Ensuring we are in the correct directory:"
+          pwd
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Checkout Secrets Prod
         run: cp /home/ethan/source/repos/Juno/production.config.json ./production.config.json
       - name: Checkout Prompts
         run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
 
-      # Optional: If your .env file is stored securely elsewhere on the Pi
-      # and needs to be copied into the checked-out directory:
-      # - name: Copy .env file
-      #   run: cp /path/to/secure/location/.env ./.env
-      #   # Ensure the source path is correct and the .env file exists there.
-      #   # The destination './.env' is relative to the checked-out code.
-
-      - name: Deploy with Docker Compose
-        # Assumes docker-compose.yml is in the root of your repository
-        # The working directory for this step will be the root of your checked-out code
+      - name: Deploy Prod with Docker Compose
         run: |
-          echo "Stopping existing services (if any)..."
-          ls
-          ls -la
-          docker compose down --remove-orphans
-          echo "Building and starting new services..."
-          docker compose up -d --build --remove-orphans juno-prod
+          echo "Stopping existing prod services (if any)..."
+          docker compose down juno-prod --remove-orphans || true
+          echo "Building and starting prod services..."
+          docker compose up -d --build juno-prod
           echo "Cleaning up old Docker images..."
-          docker image prune -af # Remove dangling images
+          docker image prune -af
