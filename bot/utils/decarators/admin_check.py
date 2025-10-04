@@ -8,6 +8,7 @@ from typing import ParamSpec, TypeVar, cast
 import discord
 
 from bot.services.embed_service import EmbedService
+from bot.services.config_service import Config
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 embed_service = EmbedService()
 
 
-def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+def is_admin(config: Config) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """
     Decorator that checks if the user is in the ADMINS list from environment variables.
     """
@@ -35,20 +36,13 @@ def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]
                 return await func(*args, **kwargs)
 
             await interaction.response.defer(ephemeral=True)
-            admin_list_str = os.getenv("ADMINS", "[]")
 
-            try:
-                admin_list = json.loads(admin_list_str)
-                if interaction.user.id in admin_list:
-                    return await func(*args, **kwargs)
-                else:
-                    logger.warning(f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command.")
-                    embed = embed_service.create_error_embed(error_message="You don't have permission to use this command.")
-                    await interaction.followup.send(embed=embed, ephemeral=True)
-                    return cast(T, None)
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse ADMINS environment variable: {admin_list_str}")
-                await interaction.followup.send("An error occurred while checking permissions.", ephemeral=True)
+            if interaction.user.id in config.adminIds:
+                return await func(*args, **kwargs)
+            else:
+                logger.warning(f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command.")
+                embed = embed_service.create_error_embed(error_message="You don't have permission to use this command.")
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return cast(T, None)
 
         return wrapper
