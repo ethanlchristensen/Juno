@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import aiohttp
 from google.genai import Client
+from google.genai.types import HarmBlockThreshold, HarmCategory
 from PIL import Image
 
 from .types import ImageGenerationResponse, Message, Role
@@ -25,8 +26,14 @@ class ImageGenerationService:
         Args:
             model: The Gemini model to use for image generation
         """
+        SAFETY_SETTINGS = {
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        }
         self.bot = bot
-        self.client = Client(api_key=bot.config.aiConfig.gemini.apiKey)
+        self.client = Client(api_key=bot.config.aiConfig.gemini.apiKey, safety_settings=SAFETY_SETTINGS)
         self.model = model
         self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
 
@@ -63,7 +70,10 @@ User's edit request: {user_prompt}
 Please enhance this edit request with specific details while maintaining the context of the original image.""",
                 )
             else:
-                user_message = Message(role=Role.USER, content=f"User prompt: {user_prompt}\n\nPlease enhance this prompt with specific details for image generation.")
+                user_message = Message(
+                    role=Role.USER,
+                    content=f"User prompt: {user_prompt}\n\nPlease enhance this prompt with specific details for image generation.",
+                )
 
             response = await self.bot.ai_service.chat(messages=[system_message, user_message])
             boosted_prompt = response.content.strip()
@@ -103,7 +113,11 @@ including composition, subjects, colors, lighting, mood, style, and any notable 
 Be specific and thorough as this description will be used for image editing context.""",
             )
 
-            user_message = Message(role=Role.USER, content="Please describe this image in detail.", images=[{"type": "image/png", "data": img_str}])
+            user_message = Message(
+                role=Role.USER,
+                content="Please describe this image in detail.",
+                images=[{"type": "image/png", "data": img_str}],
+            )
 
             response = await self.bot.ai_service.chat(messages=[system_message, user_message])
             description = response.content.strip()
