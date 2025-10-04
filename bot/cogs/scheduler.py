@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import discord
 import pytz
@@ -10,25 +11,22 @@ from discord.ext import commands, tasks
 from bot.services.ai.types import Message
 from bot.utils.decarators.admin_check import is_admin
 from bot.utils.decarators.command_logging import log_command_usage
+from bot.services.config_service import Config
+
+if TYPE_CHECKING:
+    from bot.juno import Juno
 
 
 class SchedulerCog(commands.Cog):
-    def __init__(self, bot: discord.Client):
+    def __init__(self, bot: "Juno"):
         self.bot = bot
         self.morning_configs = self._load_morning_configs()
         self.check.start()
 
     def _load_morning_configs(self):
         """Load morning configurations from environment variable"""
-        configs_path = os.getenv("MORNING_CONFIGS_PATH", "morning_configs.json")
-
-        if not os.path.exists(configs_path):
-            # create the file
-            with open(configs_path, "w") as f:
-                json.dump({}, f)
-
         try:
-            with open(configs_path) as f:
+            with open(self.bot.config.morningConfigsPath) as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             self.bot.logger.error(f"Error loading morning configs: {e}")
@@ -36,11 +34,10 @@ class SchedulerCog(commands.Cog):
 
     def _save_morning_configs(self):
         """Save morning configurations to JSON file"""
-        configs_path = os.getenv("MORNING_CONFIGS_PATH", "morning_configs.json")
         try:
-            with open(configs_path, "w") as f:
+            with open(self.bot.config.morningConfigsPath, "w") as f:
                 json.dump(self.morning_configs, f, indent=4)
-            self.bot.logger.info(f"Morning configs saved to {configs_path}")
+            self.bot.logger.info(f"Morning configs saved to {self.bot.config.morningConfigsPath}")
         except Exception as e:
             self.bot.logger.error(f"Error saving morning configs: {e}")
 
@@ -290,5 +287,5 @@ class SchedulerCog(commands.Cog):
         await interaction.followup.send(content=timezone_text, ephemeral=True)
 
 
-async def setup(bot):
+async def setup(bot: "Juno"):
     await bot.add_cog(SchedulerCog(bot))

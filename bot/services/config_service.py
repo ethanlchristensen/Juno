@@ -64,6 +64,7 @@ class Config:
     mentionCooldown: int
     cooldownBypassList: list[int]
     promptsPath: str
+    morningConfigsPath: str
 
 
 class ConfigService:
@@ -123,6 +124,7 @@ class ConfigService:
             mentionCooldown=raw.get("mentionCooldown", 20),
             cooldownBypassList=raw.get("cooldownBypassList", []),
             promptsPath=raw.get("promptsPath", "prompts.json"),
+            morningConfigsPath=raw.get("morningConfigsPath", "morning_configs.json"),
         )
 
     def _parse_ollama_config(self, data: dict | None) -> OllamaConfig | None:

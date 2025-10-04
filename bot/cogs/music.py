@@ -8,6 +8,7 @@ from bot.services.embed_service import QueuePaginationView
 from bot.services.music.types import FilterPreset
 from bot.utils.decarators.command_logging import log_command_usage
 from bot.utils.decarators.voice_check import require_voice_channel
+from bot.services.config_service import Config
 
 if TYPE_CHECKING:
     from bot.juno import Juno
@@ -238,5 +239,5 @@ class MusicCog(commands.Cog):
             await interaction.response.send_message("Failed to seek. Make sure a song is playing.", ephemeral=True)
 
 
-async def setup(bot: discord.Client):
+async def setup(bot: "Juno"):
     await bot.add_cog(MusicCog(bot))
