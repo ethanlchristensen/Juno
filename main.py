@@ -15,8 +15,7 @@ intents.message_content = True
 intents.members = True
 intents.voice_states = True
 
-config_service = get_config_service("config.json")
-config = config_service.load()
+config = get_config_service("config.json").load()
 
 client = Juno(intents=intents, config=config)
 client.run(config.discordToken, root_logger=True)
