@@ -1,4 +1,4 @@
-from google import genai
+from google.genai import Client
 from google.genai import types
 from PIL import Image
 from io import BytesIO
@@ -8,6 +8,7 @@ import aiohttp
 import asyncio
 
 from .types import ImageGenerationResponse
+from ..config_service import Config
 
 logger = logging.getLogger(__name__)
 
@@ -15,14 +16,14 @@ logger = logging.getLogger(__name__)
 class ImageGenerationService:
     """Service for generating and editing images using Gemini AI."""
     
-    def __init__(self, model: str = "gemini-2.5-flash-image"):
+    def __init__(self, config: Config, model: str = "gemini-2.5-flash-image"):
         """
         Initialize the image generation service.
         
         Args:
             model: The Gemini model to use for image generation
         """
-        self.client = genai.Client()
+        self.client = Client(api_key=config.aiConfig.gemini.apiKey)
         self.model = model
         self.base_prompt = "You must generate an image with the following user prompt. Do not ask follow questions to get the user to refine the prompt."
     

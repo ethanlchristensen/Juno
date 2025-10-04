@@ -21,9 +21,9 @@ jobs:
         # This checks out the code into the runner's workspace on the Pi
 
       - name: Checkout Secrets Dev
-        run: cp /home/ethan/source/repos/Juno/development.env ./development.env
+        run: cp /home/ethan/source/repos/Juno/development.config.json ./development.config.json
       - name: Checkout Secrets Prod
-        run: cp /home/ethan/source/repos/Juno/production.env ./production.env
+        run: cp /home/ethan/source/repos/Juno/production.config.json ./production.config.json
       - name: Checkout Prompts
         run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
 

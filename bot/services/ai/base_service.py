@@ -64,6 +64,40 @@ class BaseService(ABC):
                 )
 
             return mapped_message
+        elif provider == "anthropic":
+            # Anthropic requires content as string if no images, array if images
+            if images := message.images:
+                content_parts = []
+                
+                # Add text first
+                if message.content:
+                    content_parts.append({
+                        "type": "text",
+                        "text": message.content
+                    })
+                
+                # Add images
+                for image in images:
+                    content_parts.append({
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": image.get("type", "image/jpeg"),
+                            "data": image.get("data", "")
+                        }
+                    })
+                
+                mapped_message = {
+                    "role": message.role,
+                    "content": content_parts
+                }
+            else:
+                mapped_message = {
+                    "role": message.role,
+                    "content": message.content
+                }
+            
+            return mapped_message
         elif provider == "google":
             mapped_message = {
                 "role": message.role,

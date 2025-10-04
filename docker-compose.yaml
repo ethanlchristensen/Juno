@@ -4,14 +4,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - development.env
+    volumes:
+      - ./development.config.json:/app/config.json:ro
+      - ./prompts.json:/app/prompts.json:ro
     restart: unless-stopped
   juno-prod:
     container_name: juno-prod
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - production.env
+    volumes:
+      - ./production.config.json:/app/config.json:ro
+      - ./prompts.json:/app/prompts.json:ro
     restart: unless-stopped

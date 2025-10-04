@@ -5,22 +5,16 @@ from pydantic import BaseModel, Field
 
 from bot.services  import AiServiceFactory
 from .types import Message, UserIntent
+from ..config_service import Config
 
 logger = logging.getLogger(__name__)
 
 
 class AiOrchestrator:
-    def __init__(self):
-        preferred_provider = os.getenv("PREFERRED_ORCHESTRATOR_PROVIDER", None)
-
-        if not preferred_provider:
-            preferred_provider = "google"
-            self.model = "gemini-2.5-flash"
-        else:
-            self.model = os.getenv("PREFERRED_ORCHESTRATOR_MODEL", "gemini-2.5-flash")
-
-        self.ai_service = AiServiceFactory.get_service(preferred_provider)
-        logger.info(f"Initialized AiOrchestrator with provider={preferred_provider}, model={self.model}")
+    def __init__(self, config: Config):
+        self.ai_service = AiServiceFactory.get_service(provider=config.aiConfig.orchestrator.preferredAiProvider, config=config)
+        self.model = config.aiConfig.orchestrator.preferredModel
+        logger.info(f"Initialized AiOrchestrator with provider={config.aiConfig.orchestrator.preferredAiProvider}, model={self.model}")
     
     async def detect_intent(
         self, 

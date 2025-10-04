@@ -9,6 +9,7 @@ from google.genai import Client
 
 from .base_service import BaseService
 from .types import Message, AIChatResponse, AIServiceConfig
+from ..config_service import Config
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -18,23 +19,18 @@ class GoogleAIService(BaseService):
     A service class for interacting with Google's AI API.
     """
 
-    def __init__(self, config: Optional[AIServiceConfig] = None):
+    def __init__(self, config: Config):
         """
         Initializes the GoogleAIService with the necessary API key for authentication.
 
         Args:
             api_key (str): The Google AI API key.
         """
-        if api_key := (config and config.api_key) or os.getenv("GEMINI_API_KEY"):
-             self.client = Client(api_key=api_key)
-        else:
-            raise ValueError("GEMINI_API_KEY is not set")
 
         self.logger = logging.getLogger(__name__)
 
-        self.default_model = (config and config.model) or os.getenv(
-            "PREFERRED_GEMINI_MODEL", "gemini-2.0-flash"
-        )
+        self.client = Client(api_key=config.aiConfig.gemini.apiKey)
+        self.default_model = config.aiConfig.gemini.preferredModel
         self.logger.info(f"Intializing GoogleAIService with default_model={self.default_model}")
 
 
@@ -83,8 +79,8 @@ class GoogleAIService(BaseService):
         self, messages: List[Message], schema: Type[T], model: Optional[str] = None
     ) -> T:
         if not self.client:
-            raise ValueError("GoogleAI Service is not initialized. Please set the GEMINI_API_KEY.")
-
+            return {"error": "GoogleAI Service is not initialized. Please set the GEMINI_API_KEY."}
+        
         try:
             model_to_use = model or self.default_model
 

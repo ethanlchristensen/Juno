@@ -6,21 +6,17 @@ from pydantic import BaseModel
 
 from .base_service import BaseService
 from .types import Message, AIChatResponse, AIServiceConfig
+from ..config_service import Config
 
 T = TypeVar('T', bound=BaseModel)
 
 
 class OllamaService(BaseService):
-    def __init__(self, config: Optional[AIServiceConfig] = None):
+    def __init__(self, config: Config):
         self.logger = logging.getLogger(__name__)
-        host = (config and config.host) or os.getenv(
-            "OLLAMA_ENDPOINT", "localhost:11434"
-        )
-        self.client = ollama.Client(host=host)
-        self.default_model = (config and config.model) or os.getenv(
-            "PREFERRED_OLLAMA_MODEL", "llama3.1"
-        )
-        self.logger.info(f"Intializing OllamaService with host={host} and default_model={self.default_model}")
+        self.client = ollama.Client(host=config.aiConfig.ollama.endpoint)
+        self.default_model = config.aiConfig.ollama.preferredModel
+        self.logger.info(f"Intializing OllamaService with host={config.aiConfig.ollama.endpoint} and default_model={self.default_model}")
 
     async def chat(
         self, messages: List[Message], model: Optional[str] = None

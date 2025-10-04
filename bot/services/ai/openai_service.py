@@ -7,22 +7,15 @@ from pydantic import BaseModel
 
 from .base_service import BaseService
 from .types import Message, AIChatResponse, AIServiceConfig
-
+from ..config_service import Config
 
 T = TypeVar('T', bound=BaseModel)
 
 class OpenAIService(BaseService):
-    def __init__(self, config: Optional[AIServiceConfig] = None):
+    def __init__(self, config: Config):
         self.logger = logging.getLogger(__name__)
-
-        if api_key := (config and config.api_key) or os.getenv("OPENAI_API_KEY"):
-            self.client = openai.Client(api_key=api_key)
-        else:
-            raise ValueError("OPENAI_API_KEY is not set")
-        
-        self.default_model = (config and config.model) or os.getenv(
-            "PREFERRED_OPENAI_MODEL", "gpt-4o-mini"
-        )
+        self.client = openai.Client(api_key=config.aiConfig.openai.apiKey)
+        self.default_model = config.aiConfig.openai.preferredModel
         self.logger.info(f"Intializing OpenAIService with default_model={self.default_model}")
 
 

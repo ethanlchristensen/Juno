@@ -1,12 +1,10 @@
-import os
-import dotenv
 import discord
 import logging
 
 from bot import settings
 from bot.juno import Juno
+from bot.services import get_config_service
 
-dotenv.load_dotenv(override=True)
 
 logger = logging.getLogger("bot")
 
@@ -17,5 +15,8 @@ intents.message_content = True
 intents.members = True
 intents.voice_states = True
 
-client = Juno(intents=intents)
-client.run(os.getenv("TOKEN"), root_logger=True)
+config_service = get_config_service("config.json")
+config = config_service.load()
+
+client = Juno(intents=intents, config=config)
+client.run(config.discordToken, root_logger=True)

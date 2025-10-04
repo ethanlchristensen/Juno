@@ -8,6 +8,7 @@ from .music.audio_service import AudioService
 from .music.types import AudioMetaData, AudioSource, FilterPreset
 
 from .embed_service import EmbedService, QueuePaginationView
+from .config_service import get_config_service, Config
 
 __all__ = [
     "AiServiceFactory",
@@ -24,5 +25,7 @@ __all__ = [
     "AiOrchestrator",
     "UserIntent",
     "ImageGenerationService",
-    "ImageGenerationResponse"
+    "ImageGenerationResponse",
+    "get_config_service",
+    "Config"
 ]

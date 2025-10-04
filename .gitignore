@@ -175,3 +175,4 @@ cython_debug/
 prompts.json
 *.encrypted
 morning_configs.json
+*config.json
