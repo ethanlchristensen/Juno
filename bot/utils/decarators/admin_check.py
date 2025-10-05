@@ -4,6 +4,7 @@ from functools import wraps
 from typing import ParamSpec, TypeVar, cast
 
 import discord
+from discord.ext import commands
 
 from bot.services.config_service import Config
 from bot.services.embed_service import EmbedService
@@ -35,9 +36,7 @@ def is_admin() -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]
 
             await interaction.response.defer(ephemeral=True)
 
-            config: Config = interaction.client.config
-
-            if interaction.user.id in config.adminIds:
+            if interaction.user.id in interaction.client.owner_ids:
                 return await func(*args, **kwargs)
             else:
                 logger.warning(f"User '{interaction.user.name}' of '{interaction.guild.name}' attempted to run an Admin command.")
