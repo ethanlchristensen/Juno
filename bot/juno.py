@@ -44,6 +44,8 @@ class Juno(commands.Bot):
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
 
+        self.logger.info(f"BOT has owner ids of {self.owner_ids}")
+
     def _load_prompts(self, prompts_path: str) -> dict:
         """Load prompts from JSON file."""
         try:
