@@ -57,7 +57,6 @@ class AIConfig:
 @dataclass
 class Config:
     discordToken: str
-    adminIds: list[int]
     invisible: bool
     aiConfig: AIConfig
     usersToId: dict[str, str]
@@ -118,7 +117,6 @@ class ConfigService:
 
         return Config(
             discordToken=raw["discordToken"],
-            adminIds=raw.get("adminIds", []),
             invisible=raw.get("invisible", False),
             aiConfig=ai_config,
             usersToId=raw.get("usersToId", {}),
