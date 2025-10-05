@@ -4,9 +4,7 @@ from functools import wraps
 from typing import ParamSpec, TypeVar, cast
 
 import discord
-from discord.ext import commands
 
-from bot.services.config_service import Config
 from bot.services.embed_service import EmbedService
 
 P = ParamSpec("P")
