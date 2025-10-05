@@ -10,7 +10,7 @@ logger = logging.getLogger("bot")
 
 settings.print_startup_banner()
 
-config = get_config_service("config/config.json").load()
+config = get_config_service("config/config.yaml").load()
 
 client = Juno(intents=discord.Intents.all(), config=config)
 client.run(config.discordToken, root_logger=True)

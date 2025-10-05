@@ -1,182 +1,170 @@
-import json
 import logging
 import os
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, field, fields
+from typing import Literal, TypeVar, get_args, get_origin
+
+import yaml
 
 logger = logging.getLogger("bot.config")
+
+T = TypeVar("T")
 
 
 @dataclass
 class OllamaConfig:
-    endpoint: str
-    preferredModel: str
+    endpoint: str = "localhost:11434"
+    preferredModel: str = "llama3.1"
 
 
 @dataclass
 class OpenAIConfig:
-    apiKey: str
-    preferredModel: str
+    apiKey: str = ""
+    preferredModel: str = "gpt-5-nano"
 
 
 @dataclass
 class AntropicConfig:
-    apiKey: str
-    preferredModel: str
+    apiKey: str = ""
+    preferredModel: str = "claude-4-5-sonnet"
 
 
 @dataclass
 class GeminiConfig:
-    apiKey: str
-    preferredModel: str
+    apiKey: str = ""
+    preferredModel: str = "gemini-2.5-flash"
 
 
 @dataclass
 class ElevenLabsConfig:
-    apiKey: str
+    apiKey: str = ""
 
 
 @dataclass
 class OrchestratorConfig:
-    preferredAiProvider: Literal["ollama", "openai", "antropic", "gemini"]
-    preferredModel: str = None
+    preferredAiProvider: Literal["ollama", "openai", "antropic", "gemini"] = "google"
+    preferredModel: str = ""
 
 
 @dataclass
 class AIConfig:
-    preferredAiProvider: Literal["ollama", "openai", "antropic", "gemini"]
+    preferredAiProvider: Literal["ollama", "openai", "antropic", "gemini"] = "google"
     ollama: OllamaConfig | None = None
     openai: OpenAIConfig | None = None
     antropic: AntropicConfig | None = None
     gemini: GeminiConfig | None = None
     elevenlabs: ElevenLabsConfig | None = None
     orchestrator: OrchestratorConfig | None = None
-    boostImagePrompts: bool | None = None
+    boostImagePrompts: bool = False
 
 
 @dataclass
 class Config:
-    discordToken: str
-    adminIds: list[int]
-    invisible: bool
-    aiConfig: AIConfig
-    usersToId: dict[str, str]
-    idToUsers: dict[str, str]
-    mentionCooldown: int
-    cooldownBypassList: list[int]
-    promptsPath: str
-    morningConfigsPath: str
+    discordToken: str = ""
+    adminIds: list[int] = field(default_factory=list)
+    invisible: bool = False
+    aiConfig: AIConfig = field(default_factory=AIConfig)
+    usersToId: dict[str, str] = field(default_factory=dict)
+    idToUsers: dict[str, str] = field(default_factory=dict)
+    mentionCooldown: int = 20
+    cooldownBypassList: list[int] = field(default_factory=list)
+    promptsPath: str = "prompts.json"
+    morningConfigsPath: str = "morning_configs.json"
 
 
 class ConfigService:
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self, config_path: str = "config.yaml"):
         self.config_path = config_path
         self.config: Config | None = None
 
     def load(self) -> Config:
-        """Load and validate configuration from JSON file."""
+        """Load and validate configuration from YAML file."""
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(f"Configuration file not found: {self.config_path}. Please copy config.sample.json to config.json and configure it.")
+            raise FileNotFoundError(f"Configuration file not found: {self.config_path}. Please copy config.sample.yaml to config.yaml and configure it.")
 
         with open(self.config_path) as file:
-            raw_config = json.load(file)
+            raw_config = yaml.safe_load(file)
 
-        self.config = self._validate_config(raw_config)
+        self.config = self._parse_dataclass(Config, raw_config)
+        self._validate_config(self.config)
         logger.info(f"Configuration loaded successfully from {self.config_path}")
         return self.config
 
-    def _validate_config(self, raw: dict) -> Config:
-        """Validate and transform raw config dict into Config object."""
-        # Validate required fields
-        if not raw.get("discordToken"):
+    def _parse_dataclass(self, cls: type[T], data: dict | None) -> T:
+        """Recursively parse a dictionary into a dataclass instance."""
+        if data is None:
+            return cls()
+
+        kwargs = {}
+        for field_info in fields(cls):
+            field_name = field_info.name
+            field_type = field_info.type
+            field_value = data.get(field_name)
+
+            # Skip if value is not provided and field has a default
+            if field_value is None:
+                continue
+
+            # Handle nested dataclasses
+            origin = get_origin(field_type)
+
+            # Handle Optional types (Union with None)
+            if origin is type(None) or (origin is type(field_type) and type(None) in get_args(field_type)):
+                args = get_args(field_type)
+                if args:
+                    # Get the non-None type
+                    inner_type = next((arg for arg in args if arg is not type(None)), None)
+                    if inner_type and hasattr(inner_type, "__dataclass_fields__"):
+                        kwargs[field_name] = self._parse_dataclass(inner_type, field_value)
+                    else:
+                        kwargs[field_name] = field_value
+                else:
+                    kwargs[field_name] = field_value
+            elif hasattr(field_type, "__dataclass_fields__"):
+                # Direct dataclass field
+                kwargs[field_name] = self._parse_dataclass(field_type, field_value)
+            else:
+                # Primitive types
+                kwargs[field_name] = field_value
+
+        return cls(**kwargs)
+
+    def _validate_config(self, config: Config):
+        """Validate the loaded configuration."""
+        if not config.discordToken:
             raise ValueError("discordToken is missing or empty in the configuration.")
 
-        if not raw.get("adminIds"):
+        if not config.adminIds:
             raise ValueError("adminIds is missing in the configuration.")
 
-        if not raw.get("aiConfig"):
+        if not config.aiConfig:
             raise ValueError("aiConfig is missing in the configuration.")
 
-        ai_config_raw = raw["aiConfig"]
-        if not ai_config_raw.get("preferredAiProvider"):
+        if not config.aiConfig.preferredAiProvider:
             raise ValueError("preferredAiProvider is missing in aiConfig.")
 
-        # Build AI provider configs
-        ai_config = AIConfig(
-            preferredAiProvider=ai_config_raw["preferredAiProvider"],
-            ollama=self._parse_ollama_config(ai_config_raw.get("ollama")),
-            openai=self._parse_openai_config(ai_config_raw.get("openai")),
-            antropic=self._parse_antropic_config(ai_config_raw.get("antropic")),
-            gemini=self._parse_gemini_config(ai_config_raw.get("gemini")),
-            elevenlabs=self._parse_elevenlabs_config(ai_config_raw.get("elevenlabs")),
-            orchestrator=self._parse_orchestrator_config(ai_config_raw.get("orchestrator")),
-            boostImagePrompts=ai_config_raw.get("boostImagePrompts"),
-        )
-
         # Validate that the preferred provider is configured
-        self._validate_preferred_provider(ai_config)
-
-        return Config(
-            discordToken=raw["discordToken"],
-            adminIds=raw.get("adminIds", []),
-            invisible=raw.get("invisible", False),
-            aiConfig=ai_config,
-            usersToId=raw.get("usersToId", {}),
-            idToUsers=raw.get("idToUsers", {}),
-            mentionCooldown=raw.get("mentionCooldown", 20),
-            cooldownBypassList=raw.get("cooldownBypassList", []),
-            promptsPath=raw.get("promptsPath", "prompts.json"),
-            morningConfigsPath=raw.get("morningConfigsPath", "morning_configs.json"),
-        )
-
-    def _parse_ollama_config(self, data: dict | None) -> OllamaConfig | None:
-        if not data:
-            return None
-        return OllamaConfig(endpoint=data.get("endpoint", "localhost:11434"), preferredModel=data.get("preferredModel", "llama3.1"))
-
-    def _parse_openai_config(self, data: dict | None) -> OpenAIConfig | None:
-        if not data or not data.get("apiKey"):
-            return None
-        return OpenAIConfig(apiKey=data["apiKey"], preferredModel=data.get("preferredModel", "gpt-4"))
-
-    def _parse_antropic_config(self, data: dict | None) -> AntropicConfig | None:
-        if not data or not data.get("apiKey"):
-            return None
-        return AntropicConfig(apiKey=data["apiKey"], preferredModel=data.get("preferredModel", "claude-3-sonnet"))
-
-    def _parse_gemini_config(self, data: dict | None) -> GeminiConfig | None:
-        if not data or not data.get("apiKey"):
-            return None
-        return GeminiConfig(apiKey=data["apiKey"], preferredModel=data.get("preferredModel", "gemini-pro"))
-
-    def _parse_elevenlabs_config(self, data: dict | None) -> ElevenLabsConfig | None:
-        if not data or not data.get("apiKey"):
-            return None
-        return ElevenLabsConfig(apiKey=data["apiKey"])
-
-    def _parse_orchestrator_config(self, data: dict | None) -> OrchestratorConfig | None:
-        if not data or not data.get("preferredAiProvider") or not data.get("preferredModel"):
-            return None
-        return OrchestratorConfig(preferredAiProvider=data.get("preferredAiProvider"), preferredModel=data.get("preferredModel"))
+        self._validate_preferred_provider(config.aiConfig)
 
     def _validate_preferred_provider(self, ai_config: AIConfig):
         """Ensure the preferred AI provider is properly configured."""
         provider = ai_config.preferredAiProvider.lower()
 
         provider_map = {
-            "ollama": ai_config.ollama,
-            "openai": ai_config.openai,
-            "antropic": ai_config.antropic,
-            "anthropic": ai_config.antropic,
-            "gemini": ai_config.gemini,
-            "google": ai_config.gemini,
+            "ollama": (ai_config.ollama, lambda c: c.endpoint and c.preferredModel),
+            "openai": (ai_config.openai, lambda c: c.apiKey),
+            "antropic": (ai_config.antropic, lambda c: c.apiKey),
+            "anthropic": (ai_config.antropic, lambda c: c.apiKey),
+            "gemini": (ai_config.gemini, lambda c: c.apiKey),
+            "google": (ai_config.gemini, lambda c: c.apiKey),
         }
 
         if provider not in provider_map:
             raise ValueError(f"Invalid preferredAiProvider: {provider}. Must be one of: {', '.join(provider_map.keys())}")
 
-        if provider_map[provider] is None:
-            raise ValueError(f"Preferred AI provider '{provider}' is not configured. Please add configuration for {provider} in aiConfig.")
+        config_obj, validator = provider_map[provider]
+
+        if config_obj is None or not validator(config_obj):
+            raise ValueError(f"Preferred AI provider '{provider}' is not properly configured. Please add valid configuration for {provider} in aiConfig.")
 
     def get_config(self) -> Config:
         """Get the loaded configuration."""
@@ -189,7 +177,7 @@ class ConfigService:
 _config_service: ConfigService | None = None
 
 
-def get_config_service(config_path: str = "config.json") -> ConfigService:
+def get_config_service(config_path: str = "config.yaml") -> ConfigService:
     """Get or create the ConfigService singleton."""
     global _config_service
     if _config_service is None:

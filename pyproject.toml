@@ -23,6 +23,7 @@ pytz = "^2025.2"
 pillow = "^11.3.0"
 anthropic = "^0.69.0"
 ruff = "^0.13.3"
+pyyaml = "^6.0.3"
 
 [build-system]
 requires = ["poetry-core"]
