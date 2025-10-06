@@ -6,18 +6,7 @@ import time
 import discord
 from discord.ext import commands
 
-from bot.services import (
-    AiOrchestrator,
-    AiServiceFactory,
-    AudioService,
-    Config,
-    CooldownService,
-    EmbedService,
-    ImageGenerationService,
-    MessageService,
-    MusicQueueService,
-    ResponseService,
-)
+from bot.services import AiOrchestrator, AiServiceFactory, AudioService, Config, CooldownService, EmbedService, ImageGenerationService, ImageLimitService, MessageService, MusicQueueService, ResponseService
 from bot.utils import JunoSlash
 
 
@@ -43,6 +32,7 @@ class Juno(commands.Bot):
         self.message_service = MessageService(self, self.prompts, config.idToUsers)
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
+        self.image_limit_service = ImageLimitService(config.aiConfig.maxDailyImages)
 
         self.logger.info(f"BOT has owner ids of {self.owner_ids}")
 
@@ -115,14 +105,15 @@ class Juno(commands.Bot):
 
         # Update cooldown and log interaction
         self.cooldown_service.update_cooldown(message.author.id)
-        username = self.config.idToUsers.get(str(message.author.id), message.author.name)
-        self.logger.info(f"📝 {username} mentioned Juno in {message.channel.name}: {message.content}")
+        user = message.author
+        guild = message.guild
+        self.logger.info(f"📝 {user.name} mentioned Juno in {message.channel.name}: {message.content}")
 
         # Process and respond
         async with message.channel.typing():
-            await self._handle_message_intent(message, reference_message, username)
+            await self._handle_message_intent(message, reference_message, user, guild)
 
-    async def _handle_message_intent(self, message: discord.Message, reference_message: discord.Message, username: str):
+    async def _handle_message_intent(self, message: discord.Message, reference_message: discord.Message, user: discord.User, guild: discord.Guild):
         """Handle the user's message based on detected intent."""
         # Determine if replying to bot's image for intent detection
         is_replying_to_bot_image = self.message_service.is_replying_to_bot_image(reference_message)
@@ -133,19 +124,27 @@ class Juno(commands.Bot):
         )
 
         if user_intent.intent == "chat":
-            await self._handle_chat_intent(message, reference_message, username, user_intent)
+            await self._handle_chat_intent(message, reference_message, user, user_intent)
         elif user_intent.intent == "image_generation":
-            await self._handle_image_generation_intent(message, reference_message)
+            await self._handle_image_generation_intent(message, reference_message, user, guild)
 
-    async def _handle_chat_intent(self, message, reference_message, username, user_intent):
+    async def _handle_chat_intent(self, message, reference_message, user, user_intent):
         """Handle chat intent."""
         self.logger.info(f"Chatting with intent: {user_intent.intent} for reason of: {user_intent.reasoning}")
-        messages = await self.message_service.build_message_context(message, reference_message, username)
+        messages = await self.message_service.build_message_context(message, reference_message, user)
         response = await self.ai_service.chat(messages=messages)
         await self.response_service.send_response(message, response.content)
 
-    async def _handle_image_generation_intent(self, message, reference_message):
+    async def _handle_image_generation_intent(self, message, reference_message, user: discord.User, guild: discord.Guild):
         """Handle image generation intent."""
+        can_generate, limit_message = self.image_limit_service.can_generate_image(user, guild)
+
+        self.logger.info(f"[HANDLEIMAGEGENERATIONINTENT] - {can_generate} - {limit_message}")
+
+        if not can_generate:
+            await self.response_service.send_response(message, limit_message)
+            return
+
         image_attachment = self.message_service.get_image_attachment(message, reference_message)
 
         if image_attachment:
@@ -156,6 +155,7 @@ class Juno(commands.Bot):
             image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
 
         if image_generation_response.generated_image:
+            self.image_limit_service.increment_usage(message.author.id, message.guild.id)
             image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
             filename = "edited_image.png" if image_attachment else "generated_image.png"
             image_file = discord.File(image_bytes, filename=filename)

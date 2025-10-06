@@ -9,6 +9,8 @@ aiConfig:
   preferredAiProvider: google
 
   boostImagePrompts: false
+
+  maxDailyImages: 5
   
   ollama:
     endpoint: localhost:11434

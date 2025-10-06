@@ -55,6 +55,7 @@ class AIConfig:
     elevenlabs: ElevenLabsConfig | None = None
     orchestrator: OrchestratorConfig | None = None
     boostImagePrompts: bool = False
+    maxDailyImages: int = 1
 
 
 @dataclass

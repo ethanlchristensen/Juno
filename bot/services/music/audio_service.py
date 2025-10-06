@@ -11,13 +11,7 @@ from .types import AudioMetaData, AudioSource, FilterPreset
 
 class AudioService:
     def __init__(self):
-        self.ydl_opts = {
-            "format": "bestaudio/best",
-            "quiet": True,
-            "noplaylist": True,
-            "extract_flat": False,
-            "allowed_extensions": "ALL"
-        }
+        self.ydl_opts = {"format": "bestaudio/best", "quiet": True, "noplaylist": True, "extract_flat": False}
         self.logger = logging.getLogger(__name__)
 
     def is_direct_media_url(self, url: str) -> bool:
@@ -43,6 +37,7 @@ class AudioService:
             return info
 
         with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
+            self.logger.info("[EXTRACTINFO] - trying to get song info with ytdlp")
             if query.startswith("http"):
                 try:
                     return ydl.extract_info(query, download=False)
@@ -71,7 +66,8 @@ class AudioService:
         filter_preset: FilterPreset | None = None,
         position: float = 0,
     ) -> discord.FFmpegPCMAudio:
-        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -allowed_extensions ALL"
+        self.logger.info("[GETAUDIOSOURCE] - Getting the FFmpegPCMAudio source to play the song")
+        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -allowed_segment_extensions ALL"
 
         if position > 0:
             self.logger.info("Recieved position when getting audio source. Attempting to seek to position.")
