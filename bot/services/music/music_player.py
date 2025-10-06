@@ -46,7 +46,7 @@ class MusicPlayer:
 
         try:
             user_channel = interaction.user.voice.channel
-            self.voice_client = await user_channel.connect()
+            self.voice_client = await user_channel.connect(self_deaf=True)
             return MusicPlayerActionResponse(is_success=True, message=f"Successfully joined the VC '{user_channel.name}'.")
         except Exception as e:
             self.logger.error(f"[JOIN] - Failed to join voice channel: {e}")

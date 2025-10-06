@@ -43,7 +43,7 @@ class MusicCog(commands.Cog):
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def join(self, interaction: discord.Interaction):
-        action_response = await self.bot.music_queue_service.get_player(interaction.guild_id).join(interaction)
+        action_response = await self.bot.music_queue_service.get_player(interaction.guild).join(interaction)
         await interaction.response.send_message(action_response.message, ephemeral=not action_response.is_success)
 
     @app_commands.command(name="play", description="Play a song with a link or query.")
