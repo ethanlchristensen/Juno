@@ -17,7 +17,7 @@ RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 # --- Runtime stage ---
 FROM python:3.13-slim as runtime
 
-RUN apt-get update && apt-get install -y curl xz-utils libopus0 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl xz-utils libopus0 ca-certificates libnss3 libssl3 && rm -rf /var/lib/apt/lists/*
 
 
 RUN curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz -o ffmpeg.tar.xz \
