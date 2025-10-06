@@ -11,14 +11,28 @@ from .types import AudioMetaData, AudioSource, FilterPreset
 
 class AudioService:
     def __init__(self):
-        self.ydl_opts = {"format": "bestaudio/best", "quiet": True, "noplaylist": True, "extract_flat": False}
+        self.ydl_opts = {
+            "format": "bestaudio/best",
+            "quiet": True,
+            "noplaylist": True,
+            "extract_flat": False,
+        }
         self.logger = logging.getLogger(__name__)
 
     def is_direct_media_url(self, url: str) -> bool:
         """Check if the URL is a direct link to a media file."""
         parsed_url = urlparse(url)
         path = parsed_url.path.lower()
-        media_extensions = [".mov", ".mp4", ".mp3", ".wav", ".ogg", ".m4a", ".webm", ".opus"]
+        media_extensions = [
+            ".mov",
+            ".mp4",
+            ".mp3",
+            ".wav",
+            ".ogg",
+            ".m4a",
+            ".webm",
+            ".opus",
+        ]
         return any(path.endswith(ext) for ext in media_extensions)
 
     def extract_info(self, query: str) -> dict[str, Any]:
@@ -67,7 +81,7 @@ class AudioService:
         position: float = 0,
     ) -> discord.FFmpegPCMAudio:
         self.logger.info("[GETAUDIOSOURCE] - Getting the FFmpegPCMAudio source to play the song")
-        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -allowed_segment_extensions ALL"
+        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 "
 
         if position > 0:
             self.logger.info("Recieved position when getting audio source. Attempting to seek to position.")

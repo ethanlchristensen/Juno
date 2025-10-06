@@ -10,17 +10,22 @@ ENV POETRY_NO_INTERACTION=1 \
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock* ./
-
 RUN touch README.md
-
 RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
+
+# --- Runtime stage ---
 FROM python:3.13-slim as runtime
 
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install curl + dependencies for FFmpeg binary
+RUN apt-get update && apt-get install -y curl xz-utils && rm -rf /var/lib/apt/lists/*
+
+# Download and install FFmpeg 7 static binary
+RUN curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz \
+    && tar -xf ffmpeg.tar.xz \
+    && cd ffmpeg-*-static \
+    && mv ffmpeg ffprobe /usr/local/bin/ \
+    && cd .. && rm -rf ffmpeg.tar.xz ffmpeg-*-static
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
@@ -28,8 +33,6 @@ ENV VIRTUAL_ENV=/app/.venv \
 WORKDIR /app
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-
-# Copy application code
 COPY . .
 
 CMD ["python", "main.py"]
