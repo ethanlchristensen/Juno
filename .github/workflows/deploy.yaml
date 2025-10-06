@@ -47,6 +47,15 @@ jobs:
       - name: Checkout Prompts
         run: cp /home/ethan/source/repos/Juno/prompts.json ./prompts.json
 
+      - name: Verify Files
+        run: |
+          echo "Listing files in current directory:"
+          ls -la
+          echo "Listing config directory:"
+          ls -la config/
+          echo "Checking prompts.json:"
+          ls -la prompts.json
+
       - name: Deploy Prod with Docker Compose
         run: |
           echo "Stopping existing prod services (if any)..."
