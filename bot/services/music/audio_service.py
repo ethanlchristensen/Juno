@@ -70,7 +70,7 @@ class AudioService:
         filter_preset: FilterPreset | None = None,
         position: float = 0,
     ) -> discord.FFmpegPCMAudio:
-        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+        before_options = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -allowed_extensions ALL"
 
         if position > 0:
             self.logger.info("Recieved position when getting audio source. Attempting to seek to position.")
