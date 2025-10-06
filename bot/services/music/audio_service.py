@@ -12,7 +12,7 @@ from .types import AudioMetaData, AudioSource, FilterPreset
 class AudioService:
     def __init__(self):
         self.ydl_opts = {
-            "format": "bestaudio/best",
+            "format": "bestaudio[acodec=aac]/bestaudio[ext=m4a]/bestaudio/best",
             "quiet": True,
             "noplaylist": True,
             "extract_flat": False,
