@@ -23,7 +23,7 @@ class AudioService:
         """Check if the URL is a direct link to a media file."""
         parsed_url = urlparse(url)
         path = parsed_url.path.lower()
-        media_extensions = [".mov", ".mp4", ".mp3", ".wav", ".ogg", ".m4a", ".webm"]
+        media_extensions = [".mov", ".mp4", ".mp3", ".wav", ".ogg", ".m4a", ".webm", ".opus"]
         return any(path.endswith(ext) for ext in media_extensions)
 
     def extract_info(self, query: str) -> dict[str, Any]:
