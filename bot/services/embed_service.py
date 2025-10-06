@@ -37,7 +37,7 @@ class EmbedService:
 
         return embed
 
-    def create_added_to_queue_embed(self, metadata: AudioMetaData, position: int, requested_by: str | None = None) -> discord.Embed:
+    def create_added_to_queue_embed(self, metadata: AudioMetaData, position: int) -> discord.Embed:
         """Create an embed for when a track is added to the queue"""
         if metadata.source == AudioSource.YOUTUBE:
             color = 0xFF0000
@@ -60,8 +60,8 @@ class EmbedService:
         embed.add_field(name="Duration", value=self.format_duration(metadata.duration), inline=True)
         embed.add_field(name="Position in Queue", value=f"#{position}", inline=True)
 
-        if requested_by:
-            embed.set_footer(text=f"Requested by: {requested_by}")
+        if metadata.requested_by:
+            embed.set_footer(text=f"Requested by: {metadata.requested_by}")
 
         if metadata.thumbnail_url:
             embed.set_thumbnail(url=metadata.thumbnail_url)
@@ -116,12 +116,11 @@ class EmbedService:
         """Create an embed displaying the music queue"""
         embed = discord.Embed(title="Music Queue", color=0x1DB954)
 
-        if current_track and current_track.get("metadata"):
-            metadata = current_track["metadata"]
-            author_text = metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"
+        if current_track:
+            author_text = current_track.author if not current_track.author_url else f"[{current_track.author}]({current_track.author_url})"
             embed.add_field(
                 name="Currently Playing:",
-                value=f"[{metadata.title}]({metadata.webpage_url}) - {author_text}",
+                value=f"[{current_track.title}]({current_track.webpage_url}) - {author_text}",
                 inline=False,
             )
 
@@ -133,14 +132,13 @@ class EmbedService:
         else:
             queue_display = []
             for i, item in enumerate(queue_items[start_idx:end_idx], start=start_idx + 1):
-                metadata: AudioMetaData = item.get("metadata")
-                author_text = metadata.author if not metadata.author_url else f"[{metadata.author}]({metadata.author_url})"
-                if metadata:
-                    queue_display.append(f"- **{i}.** [{metadata.title}]({metadata.webpage_url}) - {author_text}\n  - {self.format_duration(metadata.duration)}\n  - Requested by: **{metadata.requested_by}**")
+                author_text = item.author if not item.author_url else f"[{item.author}]({item.author_url})"
+                if item:
+                    queue_display.append(f"- **{i}.** [{item.title}]({item.webpage_url}) - {author_text}\n  - {self.format_duration(item.duration)}\n  - Requested by: **{item.requested_by}**")
 
             embed.description = "\n".join(queue_display)
 
-            embed.add_field(name="Songs in Queue", value={len(queue_items)}, inline=False)
+            embed.add_field(name="Songs in Queue", value=len(queue_items), inline=False)
 
             total_pages = (len(queue_items) + items_per_page - 1) // items_per_page
             embed.set_footer(text=f"Page {page} / {total_pages}")

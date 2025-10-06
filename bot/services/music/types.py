@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+import discord
 from discord import app_commands
 
 
@@ -38,21 +39,57 @@ class FilterPreset(Enum):
         "chorus=0.5:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
     )
     REVERSE = ("reverse", "Reverse", "areverse")
-    PHASER = ("phaser", "Phaser", "aphaser=in_gain=0.4:out_gain=0.74:delay=3:decay=0.4:speed=0.5:type=triangular")
+    PHASER = (
+        "phaser",
+        "Phaser",
+        "aphaser=in_gain=0.4:out_gain=0.74:delay=3:decay=0.4:speed=0.5:type=triangular",
+    )
     CHIPMUNK = ("chipmunk", "Chipmunk", "asetrate=48000*1.5,aresample=48000")
     SLOWMO = ("slowmo", "Slow Motion", "asetrate=48000*0.5,aresample=48000")
-    ROBOT = ("robot", "Robot Voice", "afftfilt=real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75")
-    UNDERWATER = ("underwater", "Underwater", "lowpass=f=800,highpass=f=200,chorus=0.7:0.9:55:0.4:0.25:2")
+    ROBOT = (
+        "robot",
+        "Robot Voice",
+        "afftfilt=real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75",
+    )
+    UNDERWATER = (
+        "underwater",
+        "Underwater",
+        "lowpass=f=800,highpass=f=200,chorus=0.7:0.9:55:0.4:0.25:2",
+    )
     TELEPHONE = ("telephone", "Telephone", "highpass=f=900,lowpass=f=3000")
     CRYSTALIZE = ("crystalize", "Crystalize", "crystalizer=intensity=0.7:resonance=0.5")
-    COMPRESSOR = ("compressor", "Compressor", "acompressor=threshold=0.089:ratio=9:attack=200:release=1000")
+    COMPRESSOR = (
+        "compressor",
+        "Compressor",
+        "acompressor=threshold=0.089:ratio=9:attack=200:release=1000",
+    )
     EARWAX = ("earwax", "Earwax", "earwax")
-    REVERB = ("reverb", "Shimmering Reverb", "aecho=0.8:0.88:1000:0.6,aecho=0.8:0.9:1500:0.4,aecho=0.8:0.92:2000:0.3,volume=0.8")
+    REVERB = (
+        "reverb",
+        "Shimmering Reverb",
+        "aecho=0.8:0.88:1000:0.6,aecho=0.8:0.9:1500:0.4,aecho=0.8:0.92:2000:0.3,volume=0.8",
+    )
     # HAAS = ("haas", "Haas Effect", "haas=level_in=1:level_out=1:side_gain=0.5:middle_source=mid:middle_phase=0")
-    STEREOWIDE = ("stereowide", "Stereo Wide", "stereowiden=delay=20:feedback=0.3:crossfeed=0.3:drymix=0.8")
-    PITCH_UP = ("pitch_up", "Pitch Up", "asetrate=48000*1.2,aresample=48000,atempo=0.833")
-    PITCH_DOWN = ("pitch_down", "Pitch Down", "asetrate=48000*0.8,aresample=48000,atempo=1.25")
-    EIGHT_BIT = ("8bit", "8-Bit", "aresample=8000:resampler=soxr,aresample=48000:resampler=soxr")
+    STEREOWIDE = (
+        "stereowide",
+        "Stereo Wide",
+        "stereowiden=delay=20:feedback=0.3:crossfeed=0.3:drymix=0.8",
+    )
+    PITCH_UP = (
+        "pitch_up",
+        "Pitch Up",
+        "asetrate=48000*1.2,aresample=48000,atempo=0.833",
+    )
+    PITCH_DOWN = (
+        "pitch_down",
+        "Pitch Down",
+        "asetrate=48000*0.8,aresample=48000,atempo=1.25",
+    )
+    EIGHT_BIT = (
+        "8bit",
+        "8-Bit",
+        "aresample=8000:resampler=soxr,aresample=48000:resampler=soxr",
+    )
 
     def __init__(self, value: str, display_name: str, ffmpeg_filter: str | None):
         self._value_ = value
@@ -86,10 +123,14 @@ class AudioMetaData:
     likes: int | None = None
     filter_preset: FilterPreset | None = FilterPreset.NONE
     requested_by: str | None = None
+    text_channel: discord.TextChannel | None = None
+    position: int = 0
+    to_front: bool = False
+    should_pause: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AudioMetaData":
-        filter_preset = FilterPreset(data.get("filter_preset", "none")) if data.get("filter_preset") else FilterPreset.NONE
+        filter_preset = FilterPreset.from_value(data.get("filter_preset"))
 
         return cls(
             title=data["title"],
@@ -103,6 +144,9 @@ class AudioMetaData:
             likes=data.get("likes"),
             filter_preset=filter_preset,
             requested_by=data["requested_by"],
+            position=data.get("position"),
+            to_front=data.get("to_front"),
+            should_pause=data.get("should_pause"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -118,4 +162,26 @@ class AudioMetaData:
             "likes": self.likes,
             "filter_preset": self.filter_preset.value if self.filter_preset else None,
             "requested_by": self.requested_by,
+            "position": self.position or 0,
+            "to_front": self.to_front or False,
+            "should_pause": self.should_pause or False,
+        }
+
+
+@dataclass
+class MusicPlayerActionResponse:
+    is_success: bool
+    message: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "MusicPlayerActionResponse":
+        return cls(
+            is_success=data["is_success"],
+            message=data.get("message"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "is_success": self.is_success,
+            "message": self.message,
         }

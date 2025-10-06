@@ -17,7 +17,6 @@ class MusicQueueService:
         if guild.id not in self.players:
             player = MusicPlayer(self.bot, guild)
             self.players[guild.id] = player
-            self.bot.loop.create_task(player.play_loop())
         return self.players[guild.id]
 
     def remove_player(self, guild: discord.Guild):

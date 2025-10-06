@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING
 
 import discord
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 class MusicCog(commands.Cog):
     def __init__(self, bot: "Juno"):
         self.bot = bot
+        self.logger = logging.getLogger(__name__)
 
     async def filter_autocomplete(
         self,
@@ -41,11 +43,8 @@ class MusicCog(commands.Cog):
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def join(self, interaction: discord.Interaction):
-        channel = interaction.user.voice.channel
-        vc = await channel.connect(self_deaf=True)
-        player = self.bot.music_queue_service.get_player(interaction.guild)
-        player.voice_client = vc
-        await interaction.response.send_message(f"Joined {channel.name}")
+        action_response = await self.bot.music_queue_service.get_player(interaction.guild_id).join(interaction)
+        await interaction.response.send_message(action_response.message, ephemeral=not action_response.is_success)
 
     @app_commands.command(name="play", description="Play a song with a link or query.")
     @app_commands.describe(query="Song name or YouTube link", filter="Audio filter to apply")
@@ -55,83 +54,59 @@ class MusicCog(commands.Cog):
     async def play(self, interaction: discord.Interaction, query: str, filter: str | None):
         await interaction.response.defer(ephemeral=True)
 
+        # Get the music player for this guild
         player = self.bot.music_queue_service.get_player(interaction.guild)
-        info = self.bot.audio_service.extract_info(query)
 
-        filter_preset = FilterPreset.from_value(filter)
-        metadata = self.bot.audio_service.get_metadata(info)
-        metadata.filter_preset = filter_preset
+        # Check / Join a voice channel
+        if not player.voice_client:
+            join_action_response = await player.join(interaction)
+
+            if not join_action_response.is_success:
+                await interaction.followup.send(join_action_response.message)
+                return
+
+        # Generate the song metadata
+        metadata = self.bot.audio_service.get_metadata(self.bot.audio_service.extract_info(query))
+        metadata.text_channel = interaction.channel
         metadata.requested_by = interaction.user.name
+        metadata.filter_preset = FilterPreset.from_value(filter)
 
-        try:
-            if not player.voice_client:
-                channel = interaction.user.voice.channel
-                vc = await channel.connect(self_deaf=True)
-                player.voice_client = vc
-        except discord.ClientException:
-            # If the bot is already connected, let's grab the vc.
-            player.voice_client = interaction.guild.voice_client
-        except Exception as e:
-            await interaction.followup.send(f"Failed to join voice channel: {e}", ephemeral=True)
-            return
-
-        queue_position = player.queue.qsize() + 1
-
-        should_start_playback = not player.is_playing and player.queue.qsize() == 1
-
-        await player.enqueue(metadata.url, metadata, filter_preset, text_channel=interaction.channel)
-
-        if should_start_playback:
+        if not player.is_playing() and player.queue.empty():
             await interaction.followup.send("Starting playback...", ephemeral=True)
         else:
             queue_position = player.queue.qsize()
-            embed = self.bot.embed_service.create_added_to_queue_embed(metadata, queue_position, interaction.user.display_name)
+            embed = self.bot.embed_service.create_added_to_queue_embed(metadata, queue_position)
             await interaction.followup.send(embed=embed, ephemeral=True)
+
+        await player.add(metadata)
 
     @app_commands.command(name="skip", description="Skip actively playing audio.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def skip(self, interaction: discord.Interaction):
-        player = self.bot.music_queue_service.get_player(interaction.guild)
-
-        if await player.skip():
-            await interaction.response.send_message("Skipped to next track.")
-        else:
-            await interaction.response.send_message("Nothing is playing.", ephemeral=True)
+        skip_action_response = await self.bot.music_queue_service.get_player(interaction.guild).skip()
+        await interaction.response.send_message(skip_action_response.message, ephemeral=not skip_action_response.is_success)
 
     @app_commands.command(name="pause", description="Pause the currently playing audio.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def pause(self, interaction: discord.Interaction):
-        player = self.bot.music_queue_service.get_player(interaction.guild)
-
-        if await player.pause():
-            await interaction.response.send_message("Paused the audio!")
-        else:
-            await interaction.response.send_message("No audio is playing!", ephemeral=True)
+        pause_action_response = await self.bot.music_queue_service.get_player(interaction.guild).pause()
+        await interaction.response.send_message(pause_action_response.message, ephemeral=not pause_action_response.is_success)
 
     @app_commands.command(name="resume", description="Resume audio that was previously paused.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def resume(self, interaction: discord.Interaction):
-        player = self.bot.music_queue_service.get_player(interaction.guild)
-
-        if await player.resume():
-            await interaction.response.send_message("Resumed the audio!")
-        else:
-            await interaction.response.send_message("No audio is available to resume!", ephemeral=True)
+        resume_action_response = await self.bot.music_queue_service.get_player(interaction.guild).resume()
+        await interaction.response.send_message(resume_action_response.message, ephemeral=not resume_action_response.is_success)
 
     @app_commands.command(name="leave", description="Have Juno leave the voice channel.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def leave(self, interaction: discord.Interaction):
-        player = self.bot.music_queue_service.get_player(interaction.guild)
-        if player.voice_client:
-            await player.voice_client.disconnect()
-            self.bot.music_queue_service.remove_player(interaction.guild)
-            await interaction.response.send_message("Disconnected.")
-        else:
-            await interaction.response.send_message("Not connected to a voice channel.", ephemeral=True)
+        leave_action_response = await self.bot.music_queue_service.get_player(interaction.guild).leave()
+        await interaction.response.send_message(leave_action_response.message, ephemeral=not leave_action_response.is_success)
 
     @app_commands.command(name="queue", description="View the current music queue.")
     @log_command_usage()
@@ -163,10 +138,14 @@ class MusicCog(commands.Cog):
         new_filter: str,
     ):
         player = self.bot.music_queue_service.get_player(interaction.guild)
-        filter_enum = FilterPreset.from_value(new_filter)
+        filter_preset = FilterPreset.from_value(new_filter)
 
-        if await player.set_filter(filter_enum):
-            await interaction.response.send_message(f"Applied filter: `{filter_enum.display_name}`")
+        self.logger.info(f"Filter called with {new_filter} to {player.current.title}")
+
+        filtered = await player.filter(filter_preset)
+
+        if filtered:
+            await interaction.response.send_message(f"Applied filter: `{filter_preset.display_name}`")
         else:
             await interaction.response.send_message("No song is currently playing to apply a filter to.", ephemeral=True)
 
@@ -207,35 +186,9 @@ class MusicCog(commands.Cog):
             )
             return
 
-        # Calculate total seconds
-        total_seconds = (hours * 3600) + (minutes * 60) + seconds
+        action_response = await player.seek(hours, minutes, seconds)
 
-        # Check if position exceeds song duration
-        duration = player.current.get("metadata").duration
-        if duration and total_seconds > duration:
-            minutes, seconds = divmod(duration, 60)
-            hours, minutes = divmod(minutes, 60)
-            time_format = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
-            await interaction.response.send_message(
-                f"Cannot seek to {total_seconds} seconds. Song is only {time_format} long.",
-                ephemeral=True,
-            )
-            return
-
-        if await player.seek(total_seconds):
-            # Format time for display
-            m, s = divmod(total_seconds, 60)
-            h, m = divmod(m, 60)
-            time_format = ""
-            if h > 0:
-                time_format += f"{h}h "
-            if m > 0 or h > 0:
-                time_format += f"{m}m "
-            time_format += f"{s}s"
-
-            await interaction.response.send_message(f"Seeked to {time_format}")
-        else:
-            await interaction.response.send_message("Failed to seek. Make sure a song is playing.", ephemeral=True)
+        await interaction.response.send_message(action_response.message, ephemeral=not action_response.is_success)
 
 
 async def setup(bot: "Juno"):
