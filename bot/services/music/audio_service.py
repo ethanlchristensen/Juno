@@ -16,6 +16,7 @@ class AudioService:
             "quiet": True,
             "noplaylist": True,
             "extract_flat": False,
+            "allowed_extensions": "ALL"
         }
         self.logger = logging.getLogger(__name__)
 
