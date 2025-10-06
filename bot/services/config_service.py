@@ -70,6 +70,7 @@ class Config:
     cooldownBypassList: list[int] = field(default_factory=list)
     promptsPath: str = "prompts.json"
     morningConfigsPath: str = "morning_configs.json"
+    imageLimitsPath: str = "image_limits.json"
 
 
 class ConfigService:

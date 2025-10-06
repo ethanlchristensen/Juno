@@ -32,7 +32,7 @@ class Juno(commands.Bot):
         self.message_service = MessageService(self, self.prompts, config.idToUsers)
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
-        self.image_limit_service = ImageLimitService(config.aiConfig.maxDailyImages)
+        self.image_limit_service = ImageLimitService(config.aiConfig.maxDailyImages, config.imageLimitsPath)
 
         self.logger.info(f"BOT has owner ids of {self.owner_ids}")
 
