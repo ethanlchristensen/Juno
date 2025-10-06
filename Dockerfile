@@ -17,14 +17,12 @@ RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 # --- Runtime stage ---
 FROM python:3.13-slim as runtime
 
-RUN apt-get update && apt-get install -y curl xz-utils libopus0 ca-certificates libnss3 libssl3 && rm -rf /var/lib/apt/lists/*
-
-
-RUN curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz -o ffmpeg.tar.xz \
-    && tar -xf ffmpeg.tar.xz \
-    && cd ffmpeg-*-static \
-    && mv ffmpeg ffprobe /usr/local/bin/ \
-    && cd .. && rm -rf ffmpeg.tar.xz ffmpeg-*-static
+# Add Debian testing repo for newer ffmpeg
+RUN echo "deb http://deb.debian.org/debian testing main" > /etc/apt/sources.list.d/testing.list \
+    && apt-get update \
+    && apt-get install -y -t testing ffmpeg \
+    && apt-get install -y curl xz-utils libopus0 ca-certificates libnss3 libssl3 \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
