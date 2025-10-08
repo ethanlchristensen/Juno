@@ -46,6 +46,12 @@ class OrchestratorConfig:
 
 
 @dataclass
+class OpenAiRealTimeConfig:
+    apiKey: str = ""
+    realTimeModel: str = ""
+
+
+@dataclass
 class AIConfig:
     preferredAiProvider: Literal["ollama", "openai", "antropic", "gemini"] = "google"
     ollama: OllamaConfig | None = None
@@ -54,6 +60,7 @@ class AIConfig:
     gemini: GeminiConfig | None = None
     elevenlabs: ElevenLabsConfig | None = None
     orchestrator: OrchestratorConfig | None = None
+    realTimeConfig: OpenAiRealTimeConfig | None = None
     boostImagePrompts: bool = False
     maxDailyImages: int = 1
 

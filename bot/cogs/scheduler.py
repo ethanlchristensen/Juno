@@ -235,7 +235,7 @@ class SchedulerCog(commands.Cog):
             messages = [
                 Message(
                     role="user",
-                    content="Generate a motivational morning message for a server or users. Feel free to thrown on curve ball quotes that don't really make sense.",
+                    content="Generate a motivational morning message (or un-motivational). You must be UNHINGED. Throw curve balls, odd ball quotes, etc!",
                 ),
             ]
 
