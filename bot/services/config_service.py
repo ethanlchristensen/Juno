@@ -49,6 +49,7 @@ class OrchestratorConfig:
 class OpenAiRealTimeConfig:
     apiKey: str = ""
     realTimeModel: str = ""
+    voice: str = "alloy"
 
 
 @dataclass

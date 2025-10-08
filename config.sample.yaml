@@ -34,6 +34,12 @@ aiConfig:
   orchestrator:
     preferredAiProvider: google
     preferredModel: gemini-2.5-flash
+  
+  realTimeConfig:
+    realTimeModel: "gpt-realtime-mini"
+    apiKey: "sk-..."
+    voice: "sage"
+
 
 usersToId:
   name1: "<@100000000000000000>"
