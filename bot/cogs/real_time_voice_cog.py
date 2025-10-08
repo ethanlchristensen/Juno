@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands, voice_recv
 
 from bot.services import AudioProcessor, RealTimeAudioService, VoiceReceiveSink
+from bot.utils.decarators.admin_check import is_admin
 from bot.utils.decarators.command_logging import log_command_usage
 from bot.utils.decarators.voice_check import require_voice_channel
 
@@ -234,6 +235,7 @@ class RealTimeVoiceCog(commands.Cog):
     @app_commands.command(name="voice_join", description="Have Juno join your voice channel for conversation.")
     @log_command_usage()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
+    @is_admin()
     async def voice_join(self, interaction: discord.Interaction):
         """Join the user's voice channel."""
         if self._has_active_session(interaction.guild.id):
@@ -262,6 +264,7 @@ class RealTimeVoiceCog(commands.Cog):
     @app_commands.command(name="voice_start", description="Start a real-time conversation with Juno.")
     @app_commands.describe(listen_to="Optional: Specific user to listen to (leave empty to listen to everyone)")
     @log_command_usage()
+    @is_admin()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def voice_start(self, interaction: discord.Interaction, listen_to: discord.Member | None = None):
         """Start a real-time conversation."""
@@ -329,6 +332,7 @@ class RealTimeVoiceCog(commands.Cog):
 
     @app_commands.command(name="voice_stop", description="Stop the current conversation.")
     @log_command_usage()
+    @is_admin()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def voice_stop(self, interaction: discord.Interaction):
         """Stop the conversation."""
@@ -377,6 +381,7 @@ class RealTimeVoiceCog(commands.Cog):
 
     @app_commands.command(name="voice_leave", description="Have Juno leave the voice channel.")
     @log_command_usage()
+    @is_admin()
     @require_voice_channel(ephemeral=True, allow_admin_bypass=True)
     async def voice_leave(self, interaction: discord.Interaction):
         """Leave the voice channel."""

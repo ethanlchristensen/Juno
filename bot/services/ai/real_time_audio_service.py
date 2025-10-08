@@ -44,6 +44,11 @@ class RealTimeAudioService:
         instructions: str = "Speak clearly and briefly. Confirm understanding before taking actions.",
     ):
         """Configure the session parameters."""
+        if erm := self.bot.prompts.get("realtime"):
+            instructions += erm
+
+        self.logger.info(f"Using model: {self.model} and voice: {self.voice}")
+        self.logger.info(f"Configuring with instructions of: {instructions}")
         event = {
             "type": "session.update",
             "session": {
@@ -65,11 +70,10 @@ class RealTimeAudioService:
                         "voice": self.voice,
                     },
                 },
-                "instructions": self.bot.prompts.get("realtime", instructions),
+                "instructions": instructions,
                 "temperature": 0.8,
             },
         }
-        self.logger.info(self.bot.prompts.get("realtime"))
         await self.ws.send(json.dumps(event))
 
         response = await self.ws.recv()
@@ -146,6 +150,28 @@ class RealTimeAudioService:
             except Exception as e:
                 self.logger.error(f"Exception encountered while listening for websocket response: {e}")
                 break
+
+    async def send_text_message(self, text: str):
+        """Send a text message to the conversation and trigger a response."""
+        if not self.ws:
+            return
+
+        # Add the message to the conversation
+        item_event = {
+            "type": "conversation.item.create",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": text}],
+            },
+        }
+        await self.ws.send(json.dumps(item_event))
+        self.logger.info(f"Sent text message: {text}")
+
+        # Trigger a response
+        response_event = {"type": "response.create"}
+        await self.ws.send(json.dumps(response_event))
+        self.logger.info("Triggered response from assistant")
 
     async def disconnect(self):
         """Close the WebSocket connection."""
