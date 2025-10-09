@@ -278,8 +278,6 @@ class RealTimeVoiceCog(commands.Cog):
             await interaction.followup.send("Conversation already active! Use `/voice_stop` first.", ephemeral=True)
             return
 
-        await interaction.response.defer(ephemeral=True)
-
         try:
             # Create RealTimeAudioService
             service = RealTimeAudioService(self.bot)
