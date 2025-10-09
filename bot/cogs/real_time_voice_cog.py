@@ -239,11 +239,11 @@ class RealTimeVoiceCog(commands.Cog):
     async def voice_join(self, interaction: discord.Interaction):
         """Join the user's voice channel."""
         if self._has_active_session(interaction.guild.id):
-            await interaction.followup.send_message("Already in a voice channel! Use `/voice_leave` first.", ephemeral=True)
+            await interaction.followup.send("Already in a voice channel! Use `/voice_leave` first.", ephemeral=True)
             return
 
         if not interaction.user.voice:
-            await interaction.followup.send_message("You need to be in a voice channel!", ephemeral=True)
+            await interaction.followup.send("You need to be in a voice channel!", ephemeral=True)
             return
 
         try:
@@ -255,11 +255,11 @@ class RealTimeVoiceCog(commands.Cog):
             # Initialize session storage
             self.active_sessions[interaction.guild.id] = {"voice_client": voice_client, "service": None, "sink": None, "audio_queue": None, "playback_task": None, "listen_task": None}
 
-            await interaction.followup.send_message(f"Joined {channel.name}! Use `/voice_start` to begin conversation.", ephemeral=True)
+            await interaction.followup.send(f"Joined {channel.name}! Use `/voice_start` to begin conversation.", ephemeral=True)
 
         except Exception as e:
             self.logger.error(f"Error joining voice channel: {e}")
-            await interaction.followup.send_message(f"Failed to join voice channel: {e}", ephemeral=True)
+            await interaction.followup.send(f"Failed to join voice channel: {e}", ephemeral=True)
 
     @app_commands.command(name="voice_start", description="Start a real-time conversation with Juno.")
     @app_commands.describe(listen_to="Optional: Specific user to listen to (leave empty to listen to everyone)")
@@ -271,11 +271,11 @@ class RealTimeVoiceCog(commands.Cog):
         session = self._get_session(interaction.guild.id)
 
         if not session:
-            await interaction.followup.send_message("Not in a voice channel! Use `/voice_join` first.", ephemeral=True)
+            await interaction.followup.send("Not in a voice channel! Use `/voice_join` first.", ephemeral=True)
             return
 
         if session.get("service") and session["service"].is_running:
-            await interaction.followup.send_message("Conversation already active! Use `/voice_stop` first.", ephemeral=True)
+            await interaction.followup.send("Conversation already active! Use `/voice_stop` first.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -339,7 +339,7 @@ class RealTimeVoiceCog(commands.Cog):
         session = self._get_session(interaction.guild.id)
 
         if not session or not session.get("service"):
-            await interaction.followup.send_message("No active conversation!", ephemeral=True)
+            await interaction.followup.send("No active conversation!", ephemeral=True)
             return
 
         try:
@@ -373,11 +373,11 @@ class RealTimeVoiceCog(commands.Cog):
             session["playback_task"] = None
             session["listen_task"] = None
 
-            await interaction.followup.send_message("Conversation stopped.", ephemeral=True)
+            await interaction.followup.send("Conversation stopped.", ephemeral=True)
 
         except Exception as e:
             self.logger.error(f"Error stopping conversation: {e}")
-            await interaction.followup.send_message(f"Error stopping conversation: {e}", ephemeral=True)
+            await interaction.followup.send(f"Error stopping conversation: {e}", ephemeral=True)
 
     @app_commands.command(name="voice_leave", description="Have Juno leave the voice channel.")
     @log_command_usage()
