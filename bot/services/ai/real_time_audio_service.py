@@ -54,7 +54,7 @@ class RealTimeAudioService:
             "session": {
                 "type": "realtime",
                 "model": self.model,
-                "modalities": ["audio", "text"],
+                "output_modalities": ["audio"],
                 "audio": {
                     "input": {
                         "format": {
@@ -66,12 +66,12 @@ class RealTimeAudioService:
                     "output": {
                         "format": {
                             "type": "audio/pcm",
+                            "rate": 24000
                         },
                         "voice": self.voice,
                     },
                 },
-                "instructions": instructions,
-                "temperature": 0.8,
+                "instructions": instructions
             },
         }
         await self.ws.send(json.dumps(event))
