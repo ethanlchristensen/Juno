@@ -64,14 +64,11 @@ class RealTimeAudioService:
                         "turn_detection": {"type": "server_vad"},
                     },
                     "output": {
-                        "format": {
-                            "type": "audio/pcm",
-                            "rate": 24000
-                        },
+                        "format": {"type": "audio/pcm", "rate": 24000},
                         "voice": self.voice,
                     },
                 },
-                "instructions": instructions
+                "instructions": instructions,
             },
         }
         await self.ws.send(json.dumps(event))
