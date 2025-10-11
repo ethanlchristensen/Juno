@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import time
 from typing import TYPE_CHECKING
 
@@ -218,5 +219,6 @@ class MusicPlayer:
                 await self._send_now_playing_embed(self.current)
 
     async def _send_now_playing_embed(self, song: AudioMetaData):
-        now_playing_embed = self.bot.embed_service.create_now_playing_embed(self.current)
-        await self.current.text_channel.send(embed=now_playing_embed)
+        now_playing_embed, emoji_file = self.bot.embed_service.create_now_playing_embed(self.current)
+        discord_file = None if not emoji_file else discord.File(os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file)
+        await self.current.text_channel.send(embed=now_playing_embed, file=discord_file)

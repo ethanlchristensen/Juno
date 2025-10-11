@@ -96,9 +96,11 @@ class EmbedService:
         if metadata.likes is not None:
             embed.add_field(name="Likes :thumbsup:", value=metadata.likes, inline=False)
 
+        emoji_filename = None
         if metadata.thumbnail_url:
             embed.set_thumbnail(url=metadata.thumbnail_url)
         elif metadata.source not in [AudioSource.YOUTUBE, AudioSource.SOUNDCLOUD]:
+            # Select random emoji file for generic sources
             emoji_filename = random.choice(os.listdir(os.path.join(os.getcwd(), "emojis")))
             embed.set_thumbnail(url=f"attachment://{emoji_filename}")
 
@@ -107,7 +109,7 @@ class EmbedService:
 
         embed.set_footer(text="Use /skip to skip or /queue to see what's next")
 
-        return embed
+        return embed, emoji_filename
 
     def create_queue_embed(
         self,
