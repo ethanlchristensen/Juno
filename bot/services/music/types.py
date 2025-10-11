@@ -127,6 +127,7 @@ class AudioMetaData:
     position: int = 0
     to_front: bool = False
     should_pause: bool = False
+    skip_now_playing_embed: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AudioMetaData":
@@ -147,6 +148,7 @@ class AudioMetaData:
             position=data.get("position"),
             to_front=data.get("to_front"),
             should_pause=data.get("should_pause"),
+            skip_now_playing_embed=data.get("skip_now_playing_embed", False),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -165,6 +167,7 @@ class AudioMetaData:
             "position": self.position or 0,
             "to_front": self.to_front or False,
             "should_pause": self.should_pause or False,
+            "skip_now_playing_embed": self.skip_now_playing_embed or False,
         }
 
 

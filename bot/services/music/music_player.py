@@ -79,8 +79,10 @@ class MusicPlayer:
             self._play(self.bot.audio_service.get_audio_source(url=song.url, filter_preset=song.filter_preset, position=song.position))
             if song.should_pause:
                 self._pause()
-            else:
+
+            if not song.skip_now_playing_embed:
                 await self._send_now_playing_embed(self.current)
+
             return MusicPlayerActionResponse(is_success=True, message=f"Successfully started playing the song '{song.title}'.")
 
     async def skip(self) -> MusicPlayerActionResponse:
@@ -129,6 +131,7 @@ class MusicPlayer:
         filtered_song.position = current_position
         filtered_song.should_pause = self.is_paused()
         filtered_song.to_front = True
+        filtered_song.skip_now_playing_embed = True
 
         await self.add(song=filtered_song)
 
@@ -164,6 +167,7 @@ class MusicPlayer:
         seeked_song.position = position
         seeked_song.should_pause = self.is_paused()
         seeked_song.to_front = True
+        seeked_song.skip_now_playing_embed = True
 
         await self.add(song=seeked_song)
 
@@ -219,6 +223,6 @@ class MusicPlayer:
                 await self._send_now_playing_embed(self.current)
 
     async def _send_now_playing_embed(self, song: AudioMetaData):
-        now_playing_embed, emoji_file = self.bot.embed_service.create_now_playing_embed(self.current)
+        now_playing_embed, emoji_file = self.bot.embed_service.create_now_playing_embed(song)
         discord_file = None if not emoji_file else discord.File(os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file)
-        await self.current.text_channel.send(embed=now_playing_embed, file=discord_file)
+        await song.text_channel.send(embed=now_playing_embed, file=discord_file)
