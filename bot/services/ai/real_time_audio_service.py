@@ -45,7 +45,7 @@ class RealTimeAudioService:
     ):
         """Configure the session parameters."""
         if erm := self.bot.prompts.get("realtime"):
-            instructions += erm
+            instructions = erm
 
         self.logger.info(f"Using model: {self.model} and voice: {self.voice}")
         self.logger.info(f"Configuring with instructions of: {instructions}")
