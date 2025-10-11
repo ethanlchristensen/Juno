@@ -98,6 +98,9 @@ class EmbedService:
 
         if metadata.thumbnail_url:
             embed.set_thumbnail(url=metadata.thumbnail_url)
+        elif metadata.source not in [AudioSource.YOUTUBE, AudioSource.SOUNDCLOUD]:
+            emoji_filename = random.choice(os.listdir(os.path.join(os.getcwd(), "emojis")))
+            embed.set_thumbnail(url=f"attachment://{emoji_filename}")
 
         if metadata.filter_preset:
             embed.add_field(name="Filter", value=metadata.filter_preset.display_name, inline=False)
