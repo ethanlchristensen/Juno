@@ -43,12 +43,23 @@ class ResponseService:
         processed_content = self.process_mentions(content)
         chunks = self.split_long_message(processed_content)
 
-        if image_file:
-            await message.reply(content=processed_content, file=image_file)
-        else:
-            for idx, chunk in enumerate(chunks):
-                if idx == 0:
-                    await message.reply(chunk)
-                else:
-                    await message.channel.send("...")
-                    await message.channel.send(chunk)
+        try:
+            if image_file:
+                await message.reply(content=processed_content, file=image_file)
+            else:
+                for idx, chunk in enumerate(chunks):
+                    if idx == 0:
+                        await message.reply(chunk)
+                    else:
+                        await message.channel.send("...")
+                        await message.channel.send(chunk)
+        except Exception:
+            if image_file:
+                await message.channel.send(content=processed_content, file=image_file)
+            else:
+                for idx, chunk in enumerate(chunks):
+                    if idx == 0:
+                        await message.channel.send(chunk)
+                    else:
+                        await message.channel.send("...")
+                        await message.channel.send(chunk)
