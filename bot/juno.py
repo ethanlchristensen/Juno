@@ -145,19 +145,20 @@ class Juno(commands.Bot):
             await self.response_service.send_response(message, limit_message)
             return
 
-        image_attachment = self.message_service.get_image_attachment(message, reference_message)
+        image_attachments = self.message_service.get_image_attachments(message, reference_message)
 
-        if image_attachment:
-            self.logger.info(f"Editing image: {image_attachment.filename}")
-            image_generation_response = await self.image_generation_service.edit_image_from_url(prompt=message.content, image_url=image_attachment.url)
+        if image_attachments:
+            self.logger.info(f"Editing/combining {len(image_attachments)} image(s)")
+            image_urls = [att.url for att in image_attachments]
+            image_generation_response = await self.image_generation_service.edit_images_from_urls(prompt=message.content, image_urls=image_urls)
         else:
-            self.logger.info("No image attachment found, generating image with user prompt.")
+            self.logger.info("No image attachments found, generating image with user prompt.")
             image_generation_response = await self.image_generation_service.generate_image(prompt=message.content)
 
         if image_generation_response.generated_image:
             self.image_limit_service.increment_usage(message.author.id, message.guild.id)
             image_bytes = self.image_generation_service.image_to_bytes(image=image_generation_response.generated_image)
-            filename = "edited_image.png" if image_attachment else "generated_image.png"
+            filename = "edited_image.png" if image_attachments else "generated_image.png"
             image_file = discord.File(image_bytes, filename=filename)
             await self.response_service.send_response(message, image_generation_response.text_response, image_file)
         else:

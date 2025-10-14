@@ -148,6 +148,23 @@ Be specific and thorough as this description will be used for image editing cont
             logger.error(f"Error downloading image: {e}", exc_info=True)
             return None
 
+    async def download_images_from_urls(self, urls: list[str]) -> list[Image.Image]:
+        """
+        Download multiple images from URLs.
+
+        Args:
+            urls: List of image URLs to download
+
+        Returns:
+            List of PIL Image objects (excluding failed downloads)
+        """
+        images = []
+        for url in urls:
+            image = await self.download_image_from_url(url)
+            if image:
+                images.append(image)
+        return images
+
     async def generate_image(self, prompt: str) -> ImageGenerationResponse:
         """
         Generate an image from a text prompt.
@@ -191,31 +208,41 @@ Be specific and thorough as this description will be used for image editing cont
             logger.error(f"Error generating image: {e}", exc_info=True)
             return None
 
-    async def edit_image(self, prompt: str, source_image: Image.Image) -> ImageGenerationResponse:
+    async def edit_image(self, prompt: str, source_images: list[Image.Image]) -> ImageGenerationResponse:
         """
-        Edit an existing image based on a text prompt.
+        Edit or generate from existing images based on a text prompt.
 
         Args:
-            prompt: The text description of how to modify the image
-            source_image: The PIL Image to edit
+            prompt: The text description of how to modify/combine the images
+            source_images: List of PIL Images to use as source material
 
         Returns:
             ImageGenerationResponse with edited image and optional text
         """
         try:
-            # Describe the image first
-            if self.bot.config.aiConfig.boostImagePrompts:
-                image_description = await self.describe_image(source_image)
-                boosted_prompt = await self.boost_prompt(prompt, image_description)
-                logger.info(f"Editing image with boosted prompt: {boosted_prompt}")
+            # Describe the images if boost is enabled
+            if self.bot.config.aiConfig.boostImagePrompts and source_images:
+                # For multiple images, describe each
+                descriptions = []
+                for idx, img in enumerate(source_images, 1):
+                    desc = await self.describe_image(img)
+                    descriptions.append(f"Image {idx}: {desc}")
+
+                combined_description = "\n\n".join(descriptions)
+                boosted_prompt = await self.boost_prompt(prompt, combined_description)
+                logger.info(f"Editing {len(source_images)} image(s) with boosted prompt: {boosted_prompt}")
             else:
                 boosted_prompt = prompt
+
+            # Build contents list: base prompt, boosted prompt, then all images
+            contents = [self.base_prompt, boosted_prompt]
+            contents.extend(source_images)
 
             # Use asyncio.to_thread to avoid blocking
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
                 model=self.model,
-                contents=[self.base_prompt, boosted_prompt, source_image],
+                contents=contents,
             )
 
             if response.candidates[0].finish_reason.name == "IMAGE_SAFETY":
@@ -258,6 +285,25 @@ Be specific and thorough as this description will be used for image editing cont
             return None
 
         return await self.edit_image(prompt, source_image)
+
+    async def edit_images_from_urls(self, prompt: str, image_urls: list[str]) -> ImageGenerationResponse:
+        """
+        Download and edit multiple images from URLs.
+
+        Args:
+            prompt: The text description of how to modify/combine the images
+            image_urls: List of image URLs to download and edit
+
+        Returns:
+            ImageGenerationResponse with edited image and optional text
+        """
+        source_images = await self.download_images_from_urls(image_urls)
+        if not source_images:
+            logger.error("No images could be downloaded")
+            return None
+
+        logger.info(f"Successfully downloaded {len(source_images)}/{len(image_urls)} images")
+        return await self.edit_image(prompt, source_images)
 
     def image_to_bytes(self, image: Image.Image, format: str = "PNG") -> BytesIO:
         """

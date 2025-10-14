@@ -120,6 +120,35 @@ class MessageService:
 
         return None
 
+    def get_image_attachments(self, message: discord.Message, reference_message: discord.Message | None = None) -> list[discord.Attachment]:
+        """Get all image attachments from message or referenced message.
+        Checks in order:
+        1. Current message attachments
+        2. Referenced message attachments (from any user)
+
+        Returns:
+            List of image attachments
+        """
+        images = []
+
+        # Check current message for images
+        current_images = [att for att in message.attachments if att.content_type and att.content_type.startswith("image/")]
+
+        if current_images:
+            self.logger.info(f"Found {len(current_images)} image(s) in current message")
+            images.extend(current_images)
+
+        # Check referenced message for images (from any user, not just bot)
+        if reference_message:
+            ref_images = [att for att in reference_message.attachments if att.content_type and att.content_type.startswith("image/")]
+
+            if ref_images:
+                author_name = self.ids_to_users.get(str(reference_message.author.id), reference_message.author.name)
+                self.logger.info(f"Found {len(ref_images)} image(s) in referenced message from {author_name}")
+                images.extend(ref_images)
+
+        return images
+
     def is_replying_to_bot_image(self, reference_message: discord.Message | None) -> bool:
         """Check if the user is replying to a bot message with an image."""
         if not reference_message or not self.bot.user:
