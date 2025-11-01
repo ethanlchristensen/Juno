@@ -82,6 +82,7 @@ class Config:
     mongoUri: str = ""
     mongoDbName: str = ""
     mongoMessagesCollectionName: str = ""
+    allowedBotsToRespondTo: list[int] = field(default_factory=list)
 
 
 class ConfigService:

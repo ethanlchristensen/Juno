@@ -92,7 +92,10 @@ class Juno(commands.Bot):
 
     async def on_message(self, message: discord.Message):
         # Early returns for invalid messages
-        if message.author == self.user or message.author.bot:
+        if message.author == self.user:
+            return
+
+        if message.author.bot and message.author.id not in self.config.allowedBotsToRespondTo:
             return
 
         # Check if bot is mentioned or message is a reply to the bot
