@@ -11,6 +11,12 @@ class ResponseService:
 
     def process_mentions(self, content: str) -> str:
         """Replace name mentions with Discord user IDs."""
+
+        for name in self.names_to_ats.keys():
+            # Remove backticks around the username
+            backtick_pattern = r"`(" + re.escape(name) + r")`"
+            content = re.sub(backtick_pattern, r"\1", content, flags=re.IGNORECASE)
+
         for name, user_id in self.names_to_ats.items():
             pattern = re.compile(re.escape(name), re.IGNORECASE)
             content = pattern.sub(f"{user_id}", content)
