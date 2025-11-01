@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import discord
 import pymongo
@@ -21,15 +21,9 @@ class DiscordMessagesService:
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Initialized DiscordMessagesService with collection {self.messages_collection.name}")
 
-    def get_last_n_messages_within_n_minutes(self, message: discord.Message, n: int, minutes: int) -> List[Message]:
-        time_threshold = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).replace(tzinfo=None)
-        query = {
-            "guild_id": Int64(message.guild.id),
-            "channel_id": Int64(message.channel.id),
-            "timestamp": {"$gte": time_threshold},
-            "message_id": {"$ne": Int64(message.id)},
-            "deleted": False
-        }
+    def get_last_n_messages_within_n_minutes(self, message: discord.Message, n: int, minutes: int) -> list[Message]:
+        time_threshold = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=minutes)).replace(tzinfo=None)
+        query = {"guild_id": Int64(message.guild.id), "channel_id": Int64(message.channel.id), "timestamp": {"$gte": time_threshold}, "message_id": {"$ne": Int64(message.id)}, "deleted": False}
         messages = list(self.messages_collection.find(query).sort({"timestamp": 1}).limit(n))
         self.logger.info(f"Fetched {len(messages)} messages for guild_id {message.guild.id}:{message.channel.id} since {time_threshold.isoformat()}")
         return [self.convert_db_message_to_ai_message(msg) for msg in reversed(messages)]
