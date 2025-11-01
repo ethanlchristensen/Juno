@@ -6,7 +6,7 @@ import time
 import discord
 from discord.ext import commands
 
-from bot.services import AiOrchestrator, AiServiceFactory, AudioService, Config, CooldownService, EmbedService, ImageGenerationService, ImageLimitService, MessageService, MusicQueueService, ResponseService
+from bot.services import AiOrchestrator, AiServiceFactory, AudioService, Config, CooldownService, DiscordMessagesService, EmbedService, ImageGenerationService, ImageLimitService, MessageService, MusicQueueService, ResponseService
 from bot.utils import JunoSlash
 
 
@@ -33,6 +33,7 @@ class Juno(commands.Bot):
         self.response_service = ResponseService(config.usersToId)
         self.cooldown_service = CooldownService(config.mentionCooldown, config.cooldownBypassList)
         self.image_limit_service = ImageLimitService(config.aiConfig.maxDailyImages, config.imageLimitsPath)
+        self.discord_messages_service = DiscordMessagesService(self)
 
         self.logger.info(f"BOT has owner ids of {self.owner_ids}")
 

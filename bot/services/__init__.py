@@ -9,6 +9,7 @@ from .ai.real_time_audio_service import (
 from .ai.types import AIChatResponse, ImageGenerationResponse, Message, UserIntent
 from .config_service import Config, get_config_service
 from .cooldown_service import CooldownService
+from .discord_messages_service import DiscordMessagesService
 from .embed_service import EmbedService, QueuePaginationView
 from .image_limit_service import ImageLimitService
 from .message_service import MessageService
@@ -42,4 +43,5 @@ __all__ = [
     "RealTimeAudioService",
     "VoiceReceiveSink",
     "AudioProcessor",
+    "DiscordMessagesService",
 ]

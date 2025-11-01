@@ -1,14 +1,18 @@
 import base64
 import logging
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
 
 from bot.services import Message
 
+if TYPE_CHECKING:
+    from bot.juno import Juno
+
 
 class MessageService:
-    def __init__(self, bot, prompts: dict, ids_to_users: dict):
+    def __init__(self, bot: "Juno", prompts: dict, ids_to_users: dict):
         self.bot = bot
         self.prompts = prompts
         self.ids_to_users = ids_to_users
@@ -54,6 +58,8 @@ class MessageService:
         images = await self.process_message_images(message)
 
         messages = []
+
+        messages += self.bot.discord_messages_service.get_last_n_messages_within_n_minutes(message=message, n=5, minutes=30)
 
         # Add system prompt if available
         if main_prompt := self.prompts.get("main"):

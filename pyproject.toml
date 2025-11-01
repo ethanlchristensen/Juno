@@ -28,6 +28,7 @@ tzdata = "^2025.2"
 websocket-client = "^1.9.0"
 numpy = "^2.3.3"
 discord-ext-voice-recv = "^0.5.2a179"
+pymongo = "^4.15.3"
 
 [build-system]
 requires = ["poetry-core"]

@@ -79,6 +79,9 @@ class Config:
     promptsPath: str = "prompts.json"
     morningConfigsPath: str = "morning_configs.json"
     imageLimitsPath: str = "image_limits.json"
+    mongoUri: str = ""
+    mongoDbName: str = ""
+    mongoMessagesCollectionName: str = ""
 
 
 class ConfigService:
