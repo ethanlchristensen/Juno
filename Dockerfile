@@ -1,4 +1,4 @@
-FROM python:3.13-slim as builder
+FROM python:3.13-slim AS builder
 
 RUN pip install poetry==2.2.0
 
@@ -15,7 +15,7 @@ RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
 
 # --- Runtime stage ---
-FROM python:3.13-slim as runtime
+FROM python:3.13-slim aASruntime
 
 # Add Debian testing repo for newer ffmpeg
 RUN echo "deb http://deb.debian.org/debian testing main" > /etc/apt/sources.list.d/testing.list \
