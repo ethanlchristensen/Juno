@@ -30,7 +30,7 @@ jobs:
   deploy-prod:
     needs: lint
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: [self-hosted, linux, arm64, EPIC]
+    runs-on: [self-hosted, linux, arm64, PIRONMAN]
     environment: production
     
     steps:
