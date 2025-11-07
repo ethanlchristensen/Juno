@@ -25,7 +25,7 @@ class SchedulerCog(commands.Cog):
     def cog_unload(self):
         self.check.cancel()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=30)
     async def check(self):
         """Check each guild's configured time and send messages when appropriate"""
         morning_configs = self.morning_config_service.get_all_configs()
