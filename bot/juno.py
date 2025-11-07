@@ -35,8 +35,6 @@ class Juno(commands.Bot):
         self.image_limit_service = MongoImageLimitService(self, config.aiConfig.maxDailyImages)
         self.discord_messages_service = DiscordMessagesService(self)
 
-        self.logger.info(f"BOT has owner ids of {self.owner_ids}")
-
     def _load_prompts(self, prompts_path: str) -> dict:
         """Load prompts from JSON file."""
         try:

@@ -68,6 +68,7 @@ class AIConfig:
 
 @dataclass
 class Config:
+    environment: str = ""
     devDiscordToken: str = ""
     prodDiscordToken: str = ""
     adminIds: list[int] = field(default_factory=list)
@@ -101,7 +102,7 @@ class ConfigService:
         self.config_path = config_path
         self.config: Config | None = None
 
-    def load(self) -> Config:
+    def load(self, environment: str) -> Config:
         """Load and validate configuration from YAML file."""
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(f"Configuration file not found: {self.config_path}. Please copy config.sample.yaml to config.yaml and configure it.")
@@ -112,10 +113,10 @@ class ConfigService:
         self.config = self._parse_dataclass(Config, raw_config)
         self._validate_config(self.config)
 
-        # Log which environment we're using
-        env = os.getenv("ENVIRONMENT", "dev").lower()
         logger.info(f"Configuration loaded successfully from {self.config_path}")
-        logger.info(f"Environment: {env.upper()} (using {'prodDiscordToken' if env in ['prod', 'production'] else 'devDiscordToken'})")
+        logger.info(f"Environment: {environment.upper()} (using {'prodDiscordToken' if environment in ['prod', 'production'] else 'devDiscordToken'})")
+
+        self.config.environment = environment
 
         return self.config
 
