@@ -111,7 +111,7 @@ class MongoImageLimitService:
             time_until_reset = reset_time - now
             hours = int(time_until_reset.total_seconds() // 3600)
             minutes = int((time_until_reset.total_seconds() % 3600) // 60)
-            return False, f"Daily image limit reached ({user_limit} images). Resets in {hours}h {minutes}m."
+            return False, f"Daily image limit reached ({user_limit} images). Resets in {hours}h {minutes}m. Use the `/image_stats` command to check your usage."
 
         return True, ""
 
