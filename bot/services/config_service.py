@@ -83,7 +83,17 @@ class Config:
     mongoUri: str = ""
     mongoDbName: str = ""
     mongoMessagesCollectionName: str = ""
+    mongoMorningConfigsCollectionName: str = "morning_configs"
+    mongoImageLimitsCollectionName: str = "image_limits"
     allowedBotsToRespondTo: list[int] = field(default_factory=list)
+
+    @property
+    def discordToken(self) -> str:
+        """Get the appropriate Discord token based on environment."""
+        env = os.getenv("ENVIRONMENT", "dev").lower()
+        if env == "prod" or env == "production":
+            return self.prodDiscordToken
+        return self.devDiscordToken
 
 
 class ConfigService:
@@ -101,7 +111,12 @@ class ConfigService:
 
         self.config = self._parse_dataclass(Config, raw_config)
         self._validate_config(self.config)
+
+        # Log which environment we're using
+        env = os.getenv("ENVIRONMENT", "dev").lower()
         logger.info(f"Configuration loaded successfully from {self.config_path}")
+        logger.info(f"Environment: {env.upper()} (using {'prodDiscordToken' if env in ['prod', 'production'] else 'devDiscordToken'})")
+
         return self.config
 
     def _parse_dataclass(self, cls: type[T], data: dict | None) -> T:
@@ -141,7 +156,7 @@ class ConfigService:
         """Validate the loaded configuration."""
         if not config.devDiscordToken:
             raise ValueError("devDiscordToken is missing or empty in the configuration.")
-        
+
         if not config.prodDiscordToken:
             raise ValueError("prodDiscordToken is missing or empty in the configuration.")
 
@@ -183,7 +198,9 @@ class ConfigService:
             raise RuntimeError("Configuration not loaded. Call load() first.")
         return self.config
 
+
 _config_service: ConfigService | None = None
+
 
 def get_config_service(config_path: str = "config.yaml") -> ConfigService:
     """Get or create the ConfigService singleton."""

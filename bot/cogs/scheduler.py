@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
@@ -9,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from bot.services.ai.types import Message
+from bot.services.mongo_morning_config_service import MongoMorningConfigService
 from bot.utils.decarators.admin_check import is_admin
 from bot.utils.decarators.command_logging import log_command_usage
 
@@ -19,26 +19,8 @@ if TYPE_CHECKING:
 class SchedulerCog(commands.Cog):
     def __init__(self, bot: "Juno"):
         self.bot = bot
-        self.morning_configs = self._load_morning_configs()
+        self.morning_config_service = MongoMorningConfigService(bot)
         self.check.start()
-
-    def _load_morning_configs(self):
-        """Load morning configurations from environment variable"""
-        try:
-            with open(self.bot.config.morningConfigsPath) as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.bot.logger.error(f"Error loading morning configs: {e}")
-            return {}
-
-    def _save_morning_configs(self):
-        """Save morning configurations to JSON file"""
-        try:
-            with open(self.bot.config.morningConfigsPath, "w") as f:
-                json.dump(self.morning_configs, f, indent=4)
-            self.bot.logger.info(f"Morning configs saved to {self.bot.config.morningConfigsPath}")
-        except Exception as e:
-            self.bot.logger.error(f"Error saving morning configs: {e}")
 
     def cog_unload(self):
         self.check.cancel()
@@ -46,12 +28,13 @@ class SchedulerCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def check(self):
         """Check each guild's configured time and send messages when appropriate"""
-        if not self.morning_configs:
+        morning_configs = self.morning_config_service.get_all_configs()
+        if not morning_configs:
             return
 
         now_utc = datetime.now(UTC)
 
-        for guild_id, config in self.morning_configs.items():
+        for guild_id, config in morning_configs.items():
             try:
                 # Get the configured time in the configured timezone
                 guild_tz = config.get("timezone", "UTC")
@@ -119,16 +102,8 @@ class SchedulerCog(commands.Cog):
         if channel is None:
             channel = interaction.channel
 
-        # Get existing config or create new one
-        guild_id = str(interaction.guild.id)
-        config = self.morning_configs.get(guild_id, {"hour": 12, "minute": 0, "timezone": "UTC"})
-
-        # Update channel
-        config["channel_id"] = channel.id
-        self.morning_configs[guild_id] = config
-
-        # Save configs
-        self._save_morning_configs()
+            # Set channel using MongoDB service
+        config = self.morning_config_service.set_channel(interaction.guild.id, channel.id)
 
         timezone = config.get("timezone", "UTC")
         await interaction.followup.send(
@@ -176,18 +151,8 @@ class SchedulerCog(commands.Cog):
             )
             return
 
-        # Get existing config or create new one
-        guild_id = interaction.guild.id
-        config = self.morning_configs.get(str(guild_id), {})
-
-        # Update time and timezone
-        config["hour"] = hour
-        config["minute"] = minute
-        config["timezone"] = timezone
-        self.morning_configs[str(guild_id)] = config
-
-        # Save configs
-        self._save_morning_configs()
+            # Set time using MongoDB service
+        config = self.morning_config_service.set_time(interaction.guild.id, hour, minute, timezone)
 
         # Format response based on whether channel is set
         if "channel_id" in config and config["channel_id"]:
@@ -213,9 +178,8 @@ class SchedulerCog(commands.Cog):
     @is_admin()
     async def remove_morning_channel(self, interaction: discord.Interaction):
         """Remove morning messages for this guild"""
-        if interaction.guild.id in self.morning_configs:
-            del self.morning_configs[interaction.guild.id]
-            self._save_morning_configs()
+        removed = self.morning_config_service.remove_config(interaction.guild.id)
+        if removed:
             await interaction.followup.send(content="Morning messages disabled for this server.", ephemeral=True)
         else:
             await interaction.followup.send(

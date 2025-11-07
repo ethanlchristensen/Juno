@@ -58,9 +58,9 @@ cooldownBypassList:
   - 100000000000000000
 
 promptsPath: prompts.json
-morningConfigsPath: morning_configs.json
-imageLimitsPath: "config/image_limits.json"
 mongoUri: "mongodb://localhost:27017/"
 mongoDbName: "DB"
 mongoMessagesCollectionName: "COLLECTION"
+mongoMorningConfigsCollectionName: "MORNING_CONFIGS"
+mongoImageLimitsCollectionName: "IMAGE_LIMITS"
 allowedBotsToRespondTo: []
