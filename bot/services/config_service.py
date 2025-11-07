@@ -68,7 +68,8 @@ class AIConfig:
 
 @dataclass
 class Config:
-    discordToken: str = ""
+    devDiscordToken: str = ""
+    prodDiscordToken: str = ""
     adminIds: list[int] = field(default_factory=list)
     invisible: bool = False
     aiConfig: AIConfig = field(default_factory=AIConfig)
@@ -114,18 +115,14 @@ class ConfigService:
             field_type = field_info.type
             field_value = data.get(field_name)
 
-            # Skip if value is not provided and field has a default
             if field_value is None:
                 continue
 
-            # Handle nested dataclasses
             origin = get_origin(field_type)
 
-            # Handle Optional types (Union with None)
             if origin is type(None) or (origin is type(field_type) and type(None) in get_args(field_type)):
                 args = get_args(field_type)
                 if args:
-                    # Get the non-None type
                     inner_type = next((arg for arg in args if arg is not type(None)), None)
                     if inner_type and hasattr(inner_type, "__dataclass_fields__"):
                         kwargs[field_name] = self._parse_dataclass(inner_type, field_value)
@@ -134,18 +131,19 @@ class ConfigService:
                 else:
                     kwargs[field_name] = field_value
             elif hasattr(field_type, "__dataclass_fields__"):
-                # Direct dataclass field
                 kwargs[field_name] = self._parse_dataclass(field_type, field_value)
             else:
-                # Primitive types
                 kwargs[field_name] = field_value
 
         return cls(**kwargs)
 
     def _validate_config(self, config: Config):
         """Validate the loaded configuration."""
-        if not config.discordToken:
-            raise ValueError("discordToken is missing or empty in the configuration.")
+        if not config.devDiscordToken:
+            raise ValueError("devDiscordToken is missing or empty in the configuration.")
+        
+        if not config.prodDiscordToken:
+            raise ValueError("prodDiscordToken is missing or empty in the configuration.")
 
         if not config.adminIds:
             raise ValueError("adminIds is missing in the configuration.")
@@ -156,7 +154,6 @@ class ConfigService:
         if not config.aiConfig.preferredAiProvider:
             raise ValueError("preferredAiProvider is missing in aiConfig.")
 
-        # Validate that the preferred provider is configured
         self._validate_preferred_provider(config.aiConfig)
 
     def _validate_preferred_provider(self, ai_config: AIConfig):
@@ -186,10 +183,7 @@ class ConfigService:
             raise RuntimeError("Configuration not loaded. Call load() first.")
         return self.config
 
-
-# Singleton instance
 _config_service: ConfigService | None = None
-
 
 def get_config_service(config_path: str = "config.yaml") -> ConfigService:
     """Get or create the ConfigService singleton."""
