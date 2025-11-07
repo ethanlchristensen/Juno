@@ -1,4 +1,5 @@
-discordToken: "..."
+devDiscordToken: "..."
+prodDiscordToken: "..."
 
 adminIds:
   - 100000000000000000
