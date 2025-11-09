@@ -47,6 +47,14 @@ class SchedulerCog(commands.Cog):
                 # Get current time in the guild's timezone
                 now_in_guild_tz = now_utc.astimezone(tz)
 
+                # Check if we already sent a message today
+                last_sent = config.get("last_sent_date")
+                today = now_in_guild_tz.date().isoformat()
+
+                if last_sent == today:
+                    # Already sent today, skip
+                    continue
+
                 # Check if it's time to send the message
                 if now_in_guild_tz.hour == config.get("hour", 12) and now_in_guild_tz.minute < config.get("minute", 0) + 1:  # 1-minute window to account for loop interval
                     channel_id = config.get("channel_id")
@@ -82,6 +90,10 @@ class SchedulerCog(commands.Cog):
                         embed=embed,
                         file=discord.File(os.path.join(os.getcwd(), "emojis", emoji_file), emoji_file),
                     )
+
+                    # Mark as sent today
+                    self.morning_config_service.update_last_sent_date(guild_id, today)
+
                     self.bot.logger.info(f"Sent morning message to {channel.name} in {guild.name}")
             except Exception as e:
                 self.bot.logger.error(f"Error sending morning message to guild {guild_id}: {e}")

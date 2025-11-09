@@ -152,3 +152,16 @@ class MongoMorningConfigService:
         else:
             self.logger.debug(f"No morning config found for guild {guild_id} to remove")
         return removed
+
+    def update_last_sent_date(self, guild_id: int, date: str):
+        """Update the last sent date for morning messages.
+
+        Args:
+            guild_id: The Discord guild ID
+            date: Date string in 'YYYY-MM-DD' format
+        """
+        self.collection.update_one(
+            {"guild_id": Int64(guild_id)},
+            {"$set": {"last_sent_date": date}},
+        )
+        self.logger.debug(f"Updated last sent date for guild {guild_id} to {date}")
