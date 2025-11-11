@@ -48,6 +48,7 @@ class MongoMorningConfigService:
                 "minute": result.get("minute", 0),
                 "timezone": result.get("timezone", "UTC"),
                 "channel_id": result.get("channel_id"),
+                "last_sent_date": result.get("last_sent_date")
             }
         return None
 
@@ -65,6 +66,7 @@ class MongoMorningConfigService:
                 "minute": doc.get("minute", 0),
                 "timezone": doc.get("timezone", "UTC"),
                 "channel_id": doc.get("channel_id"),
+                "last_sent_date": doc.get("last_sent_date")
             }
         self.logger.debug(f"Retrieved {len(configs)} morning configs")
         return configs
@@ -99,6 +101,7 @@ class MongoMorningConfigService:
             "minute": result.get("minute", 0),
             "timezone": result.get("timezone", "UTC"),
             "channel_id": result.get("channel_id"),
+            "last_sent_date": result.get("last_sent_date")
         }
 
     def set_time(self, guild_id: int, hour: int, minute: int, timezone: str) -> dict:
@@ -134,6 +137,7 @@ class MongoMorningConfigService:
             "minute": result.get("minute", 0),
             "timezone": result.get("timezone", "UTC"),
             "channel_id": result.get("channel_id"),
+            "last_sent_date": result.get("last_sent_date")
         }
 
     def remove_config(self, guild_id: int) -> bool:
