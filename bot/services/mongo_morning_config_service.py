@@ -43,13 +43,7 @@ class MongoMorningConfigService:
         result = self.collection.find_one({"guild_id": Int64(guild_id)})
         if result:
             self.logger.debug(f"Retrieved morning config for guild {guild_id}")
-            return {
-                "hour": result.get("hour", 12),
-                "minute": result.get("minute", 0),
-                "timezone": result.get("timezone", "UTC"),
-                "channel_id": result.get("channel_id"),
-                "last_sent_date": result.get("last_sent_date")
-            }
+            return {"hour": result.get("hour", 12), "minute": result.get("minute", 0), "timezone": result.get("timezone", "UTC"), "channel_id": result.get("channel_id"), "last_sent_date": result.get("last_sent_date")}
         return None
 
     def get_all_configs(self) -> dict[str, dict]:
@@ -61,13 +55,7 @@ class MongoMorningConfigService:
         configs = {}
         for doc in self.collection.find():
             guild_id_str = str(doc["guild_id"])
-            configs[guild_id_str] = {
-                "hour": doc.get("hour", 12),
-                "minute": doc.get("minute", 0),
-                "timezone": doc.get("timezone", "UTC"),
-                "channel_id": doc.get("channel_id"),
-                "last_sent_date": doc.get("last_sent_date")
-            }
+            configs[guild_id_str] = {"hour": doc.get("hour", 12), "minute": doc.get("minute", 0), "timezone": doc.get("timezone", "UTC"), "channel_id": doc.get("channel_id"), "last_sent_date": doc.get("last_sent_date")}
         self.logger.debug(f"Retrieved {len(configs)} morning configs")
         return configs
 
@@ -96,13 +84,7 @@ class MongoMorningConfigService:
             return_document=pymongo.ReturnDocument.AFTER,
         )
         self.logger.info(f"Set morning channel for guild {guild_id} to channel {channel_id}")
-        return {
-            "hour": result.get("hour", 12),
-            "minute": result.get("minute", 0),
-            "timezone": result.get("timezone", "UTC"),
-            "channel_id": result.get("channel_id"),
-            "last_sent_date": result.get("last_sent_date")
-        }
+        return {"hour": result.get("hour", 12), "minute": result.get("minute", 0), "timezone": result.get("timezone", "UTC"), "channel_id": result.get("channel_id"), "last_sent_date": result.get("last_sent_date")}
 
     def set_time(self, guild_id: int, hour: int, minute: int, timezone: str) -> dict:
         """Set the time for morning messages.
@@ -132,13 +114,7 @@ class MongoMorningConfigService:
             return_document=pymongo.ReturnDocument.AFTER,
         )
         self.logger.info(f"Set morning time for guild {guild_id} to {hour}:{minute:02d} {timezone}")
-        return {
-            "hour": result.get("hour", 12),
-            "minute": result.get("minute", 0),
-            "timezone": result.get("timezone", "UTC"),
-            "channel_id": result.get("channel_id"),
-            "last_sent_date": result.get("last_sent_date")
-        }
+        return {"hour": result.get("hour", 12), "minute": result.get("minute", 0), "timezone": result.get("timezone", "UTC"), "channel_id": result.get("channel_id"), "last_sent_date": result.get("last_sent_date")}
 
     def remove_config(self, guild_id: int) -> bool:
         """Remove morning configuration for a guild.
