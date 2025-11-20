@@ -48,8 +48,8 @@ jobs:
       - name: Deploy Prod with Docker Compose
         run: |
           echo "Stopping existing prod services (if any)..."
-          docker compose down bruh.bot --remove-orphans || true
+          docker compose down bruh-bot-prod --remove-orphans || true
           echo "Building and starting prod services..."
-          docker compose up -d --build bruh.bot
+          docker compose up -d --build bruh-bot-prod
           echo "Cleaning up old Docker images..."
           docker image prune -af
