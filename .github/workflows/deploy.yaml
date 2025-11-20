@@ -43,13 +43,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout Secrets Prod
-        run: cp -r /home/ethan/source/repos/Juno/config/* ./config
+        run: cp -r /home/ethan/source/repos/bruh.bot/config/* ./config
 
       - name: Deploy Prod with Docker Compose
         run: |
           echo "Stopping existing prod services (if any)..."
-          docker compose down juno-prod --remove-orphans || true
+          docker compose down bruh.bot --remove-orphans || true
           echo "Building and starting prod services..."
-          docker compose up -d --build juno-prod
+          docker compose up -d --build bruh.bot
           echo "Cleaning up old Docker images..."
           docker image prune -af

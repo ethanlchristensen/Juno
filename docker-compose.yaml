@@ -1,6 +1,6 @@
 services:
-  juno-dev:
-    container_name: juno-dev
+  bruh-bot-dev:
+    container_name: bruh.bot.dev
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,8 +10,8 @@ services:
       - ./prompts.json:/app/prompts.json:ro
       - ./config:/app/config
     restart: unless-stopped
-  juno-prod:
-    container_name: juno-prod
+  bruh-bot-prod:
+    container_name: bruh.bot.prod
     build:
       context: .
       dockerfile: Dockerfile
