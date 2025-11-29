@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   push:
     branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -30,15 +31,10 @@ jobs:
   deploy-prod:
     needs: lint
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: [self-hosted, Linux, ARM64, PIRONMAN]
+    runs-on: [self-hosted, Linux, ARM64, RPI5]
     environment: production
     
     steps:
-      - name: Verify Current Directory
-        run: |
-          echo "Ensuring we are in the correct directory:"
-          pwd
-
       - name: Checkout code
         uses: actions/checkout@v4
 
