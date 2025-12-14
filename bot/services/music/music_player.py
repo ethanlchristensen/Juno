@@ -58,7 +58,7 @@ class MusicPlayer:
             return MusicPlayerActionResponse(is_success=False, message="Not currently in a VC.")
 
         await self.voice_client.disconnect()
-        self.queue = asyncio.Queue()
+        self.queue = PriorityMusicQueue()
         self.voice_client = None
         self.current = None
         return MusicPlayerActionResponse(is_success=True, message="Successfully disconnected from the VC.")
