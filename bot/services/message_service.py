@@ -63,6 +63,7 @@ class MessageService:
 
         # Add system prompt if available
         if main_prompt := self.prompts.get("main"):
+            main_prompt = main_prompt.replace("{{BOTNAME}}", self.bot.user.global_name)
             messages.append(Message(role="system", content=main_prompt))
 
         # Add reference message context if replying
@@ -92,7 +93,7 @@ class MessageService:
             if i == 0:
                 result += "" + part
             else:
-                result += "Juno" + part
+                result += self.bot.user.global_name + " " + part
 
         return result
 
