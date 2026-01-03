@@ -81,6 +81,7 @@ class SchedulerCog(commands.Cog):
 
                     if main_prompt := self.bot.prompts.get("main"):
                         self.bot.logger.info("Using main prompt for morning message")
+                        main_prompt = main_prompt.replace("{{BOTNAME}}", self.bot.user.name)
                         messages.insert(0, Message(role="system", content=main_prompt))
 
                     response = await self.bot.ai_service.chat(messages=messages)
