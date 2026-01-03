@@ -56,24 +56,55 @@ class MessageService:
     async def build_message_context(self, message: discord.Message, reference_message: discord.Message | None, username: str) -> list[Message]:
         """Build the message context for AI processing."""
         images = await self.process_message_images(message)
-
         messages = []
 
-        messages += self.bot.discord_messages_service.get_last_n_messages_within_n_minutes(message=message, n=5, minutes=30)
-
-        # Add system prompt if available
+        # Add enhanced system prompt
         if main_prompt := self.prompts.get("main"):
             main_prompt = main_prompt.replace("{{BOTNAME}}", self.bot.user.name)
-            messages.append(Message(role="system", content=main_prompt))
+
+            # Add multi-user context instructions
+            multi_user_prompt = f"""
+    {main_prompt}
+
+    MULTI-USER CHAT CONTEXT:
+    - You are in a Discord group chat with multiple users
+    - Messages are formatted as: [Username]: [Message Content]
+    - Each line represents a different message, possibly from different users
+    - Pay close attention to the username before each message
+    - When responding, you may address specific users by name if appropriate
+    """
+            messages.append(Message(role="system", content=multi_user_prompt))
+
+        # Get historical messages and format as transcript
+        historical_msgs = self.bot.discord_messages_service.get_last_n_messages_within_n_minutes(message=message, n=10, minutes=30)
+
+        if historical_msgs:
+            transcript_lines = []
+            for msg in historical_msgs:
+                author_name = self.ids_to_users.get(str(msg["author_id"]), msg["author_name"])
+                content = self.replace_mentions(msg["content"]).strip()
+
+                # Mark bot's own messages clearly
+                if msg["author_id"] == self.bot.user.id:
+                    transcript_lines.append(f"[{self.bot.user.name}]: {content}")
+                else:
+                    transcript_lines.append(f"[{author_name}]: {content}")
+
+            # Add all historical messages as a single user message
+            transcript = "RECENT CONVERSATION:\n" + "\n".join(transcript_lines)
+            messages.append(Message(role="user", content=transcript))
 
         # Add reference message context if replying
         if reference_message:
             ref_username = self.ids_to_users.get(str(reference_message.author.id), reference_message.author.name)
             ref_content = self.replace_mentions(reference_message.content).strip()
-            messages.append(Message(role="user", content=f"{ref_username} said:\n\n{ref_content}"))
+
+            # Format as part of the conversation flow
+            reply_context = f"\nREPLYING TO:\n[{ref_username}]: {ref_content}"
+            messages.append(Message(role="user", content=reply_context))
 
         # Add current message
-        current_content = f"{username} says:\n\n" + self.replace_mentions(message.content).strip()
+        current_content = f"\nCURRENT MESSAGE:\n[{username}]: " + self.replace_mentions(message.content).strip()
         messages.append(Message(role="user", content=current_content, images=images))
 
         return messages
